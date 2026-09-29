@@ -24,7 +24,6 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
-        // Exponer funciones de Firebase globalmente para la app
         window.fbDb = db;
         window.fbCollection = collection;
         window.fbGetDocs = getDocs;
@@ -32,7 +31,6 @@
         window.fbDoc = doc;
         window.fbDeleteDoc = deleteDoc;
         
-        // Disparar carga inicial desde Firebase al iniciar
         if(window.initAppFromFirebase) window.initAppFromFirebase();
     </script>
     
@@ -243,8 +241,6 @@
                     <p class="sub">Control total sincronizado con Firebase Firestore.</p>
                 </div>
                 <div class="admin-toolbar">
-                    <input type="file" id="massImageInput" multiple accept="image/*" class="hidden" onchange="handleMassiveImages(event)">
-                    <button class="btn btn-outline" onclick="document.getElementById('massImageInput').click()">📷 Fotos Masivas</button>
                     <button class="btn btn-red" onclick="openCrudModal()">+ Plato</button>
                     <button class="btn btn-outline" onclick="downloadExcelTemplate()">📥 Modelo Excel</button>
                     <input type="file" id="excelFileInput" accept=".xlsx" class="hidden" onchange="importExcel(event)">
@@ -352,6 +348,7 @@
             <div class="form-group"><label>Nombre del Plato</label><input type="text" id="crudName" class="form-control"></div>
             <div class="form-group"><label>Categoría</label><input type="text" id="crudCat" class="form-control"></div>
             <div class="form-group"><label>Precio ($)</label><input type="number" id="crudPrice" class="form-control"></div>
+            <div class="form-group"><label>URL de la Foto (Link web)</label><input type="text" id="crudImg" class="form-control" placeholder="https://ejemplo.com/foto.jpg"></div>
             <div class="form-group"><label>Descripción</label><textarea id="crudDesc" class="form-control" rows="3" placeholder="Ingredientes, aclaraciones..."></textarea></div>
             <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 24px;">
                 <button class="btn btn-outline" onclick="closeCrudModal()">Cancelar</button>
@@ -367,12 +364,10 @@
 
     <script>
         let db = [];
-        let localImageMap = {}; 
         let clientCategory = 'Todos';
         let cart = []; 
         let currentOrderType = 'mesa';
 
-        // --- CONEXIÓN FIREBASE ---
         window.initAppFromFirebase = async function() {
             try {
                 const querySnapshot = await window.fbGetDocs(window.fbCollection(window.fbDb, "productos"));
@@ -381,15 +376,13 @@
                     db.push(doc.data());
                 });
                 
-                // Si la base está vacía, cargamos los datos por defecto
                 if(db.length === 0) {
                     db = [
-                        { sku: "COMBO-1", category: "PROMOS DE PARRILLA Y COMBOS", name: "PARRILLADA SUPER COMPLETA", desc: "Variedad de cortes premium y guarnición.", price: 113400 },
-                        { sku: "COMBO-2", category: "PROMOS DE PARRILLA Y COMBOS", name: "PARRILLADA P/2 COMPLETA", desc: "Mix de carnes para compartir.", price: 93400 },
-                        { sku: "ENT-1", category: "ENTRADAS Y EMPANADAS", name: "DOCENA DE EMPANADAS", desc: "Carne / Pollo / JyQ.", price: 40000 },
-                        { sku: "SAN-1", category: "SANGUCHES DE LA CASA!", name: "SANGUCHAZO DE VACIO", desc: "Pan francés crocante con chimichurri.", price: 26700 }
+                        { sku: "COMBO-1", category: "PROMOS DE PARRILLA Y COMBOS", name: "PARRILLADA SUPER COMPLETA", desc: "Variedad de cortes premium y guarnición.", price: 113400, img: "" },
+                        { sku: "COMBO-2", category: "PROMOS DE PARRILLA Y COMBOS", name: "PARRILLADA P/2 COMPLETA", desc: "Mix de carnes para compartir.", price: 93400, img: "" },
+                        { sku: "ENT-1", category: "ENTRADAS Y EMPANADAS", name: "DOCENA DE EMPANADAS", desc: "Carne / Pollo / JyQ.", price: 40000, img: "" },
+                        { sku: "SAN-1", category: "SANGUCHES DE LA CASA!", name: "SANGUCHAZO DE VACIO", desc: "Pan francés crocante con chimichurri.", price: 26700, img: "" }
                     ];
-                    // Guardar iniciales en Firestore
                     for(const p of db) {
                         await window.fbSetDoc(window.fbDoc(window.fbDb, "productos", p.sku), p);
                     }
@@ -432,7 +425,7 @@
         });
 
         const formatPrice = (price) => new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 }).format(price);
-        const getImageUrl = (sku) => localImageMap[sku] || `https://source.unsplash.com/random/400x300/?food,${sku}`;
+        const getImageUrl = (p) => (p.img && p.img.trim() !== "") ? p.img : `https://source.unsplash.com/random/400x300/?food,${p.sku}`;
 
         function switchTab(viewId) {
             document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
@@ -450,7 +443,7 @@
         function renderAdminGrid() {
             document.getElementById('adminGrid').innerHTML = db.map(p => `
                 <div class="admin-row">
-                    <img src="${getImageUrl(p.sku)}" loading="lazy" decoding="async">
+                    <img src="${getImageUrl(p)}" loading="lazy" decoding="async">
                     <div class="col-sku">${p.sku}</div>
                     <div class="col-plato">${p.name}</div>
                     <div class="col-cat"><span class="chip">${p.category}</span></div>
@@ -475,7 +468,7 @@
             const filteredDb = clientCategory === 'Todos' ? db : db.filter(p => p.category === clientCategory);
             grid.innerHTML = filteredDb.map(p => `
                 <div class="client-card">
-                    <img src="${getImageUrl(p.sku)}" class="client-img" loading="lazy" decoding="async">
+                    <img src="${getImageUrl(p)}" class="client-img" loading="lazy" decoding="async">
                     <div class="client-info">
                         <div class="client-title">${p.name}</div>
                         <div class="client-desc">${p.desc || ''}</div>
@@ -574,6 +567,7 @@
                 document.getElementById('crudName').value = product.name;
                 document.getElementById('crudCat').value = product.category;
                 document.getElementById('crudPrice').value = product.price;
+                document.getElementById('crudImg').value = product.img || '';
                 document.getElementById('crudDesc').value = product.desc || '';
                 document.getElementById('crudSku').disabled = true;
             } else {
@@ -582,6 +576,7 @@
                 document.getElementById('crudName').value = '';
                 document.getElementById('crudCat').value = '';
                 document.getElementById('crudPrice').value = '';
+                document.getElementById('crudImg').value = '';
                 document.getElementById('crudDesc').value = '';
                 document.getElementById('crudSku').disabled = false;
             }
@@ -594,16 +589,17 @@
             const name = document.getElementById('crudName').value;
             const cat = document.getElementById('crudCat').value;
             const price = parseFloat(document.getElementById('crudPrice').value);
+            const img = document.getElementById('crudImg').value.trim();
             const desc = document.getElementById('crudDesc').value;
             if(!name || !price) return;
 
             let updatedProduct;
             if(editingSku) {
                 const index = db.findIndex(p => p.sku === editingSku);
-                db[index] = { ...db[index], name, category: cat, price, desc };
+                db[index] = { ...db[index], name, category: cat, price, img, desc };
                 updatedProduct = db[index];
             } else {
-                updatedProduct = { sku, name, category: cat, price, desc };
+                updatedProduct = { sku, name, category: cat, price, img, desc };
                 db.unshift(updatedProduct);
             }
             
@@ -634,7 +630,7 @@
         }
 
         function downloadExcelTemplate() {
-            const templateData = [{ SKU: "NUEVO-1", Categoría: "Bebidas", Plato: "Coca Cola 1.5L", Descripción: "Gaseosa fría", Precio: 2500 }];
+            const templateData = [{ SKU: "NUEVO-1", Categoría: "Bebidas", Plato: "Coca Cola 1.5L", Descripción: "Gaseosa fría", Precio: 2500, Imagen: "" }];
             const ws = XLSX.utils.json_to_sheet(templateData);
             const wb = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(wb, ws, "Catálogo");
@@ -642,7 +638,7 @@
         }
 
         function exportExcelBackup() {
-            const exportData = db.map(p => ({ SKU: p.sku, Categoría: p.category, Plato: p.name, Descripción: p.desc, Precio: Number(p.price) }));
+            const exportData = db.map(p => ({ SKU: p.sku, Categoría: p.category, Plato: p.name, Descripción: p.desc, Precio: Number(p.price), Imagen: p.img || '' }));
             const ws = XLSX.utils.json_to_sheet(exportData);
             const wb = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(wb, ws, "Catálogo");
@@ -663,7 +659,14 @@
                     const row = json[i];
                     const sku = row.SKU || `SKU-${Date.now()}-${i}`;
                     const index = db.findIndex(p => p.sku === sku);
-                    const newP = { sku, category: row.Categoría || 'Gral', name: row.Plato || 'Sin Nombre', desc: row.Descripción || '', price: parseFloat(String(row.Precio||'0').replace(/\D/g,'')) };
+                    const newP = { 
+                        sku, 
+                        category: row.Categoría || 'Gral', 
+                        name: row.Plato || 'Sin Nombre', 
+                        desc: row.Descripción || '', 
+                        price: parseFloat(String(row.Precio||'0').replace(/\D/g,'')),
+                        img: row.Imagen || ''
+                    };
                     
                     if (index > -1) db[index] = newP; else db.push(newP);
                     await saveProductToFirebase(newP);
@@ -673,20 +676,6 @@
             };
             reader.readAsArrayBuffer(file); 
             event.target.value = '';
-        }
-
-        function handleMassiveImages(event) {
-            const files = event.target.files;
-            if(!files || files.length === 0) return;
-            Array.from(files).forEach(file => {
-                if(!file.type.startsWith('image/')) return;
-                const sku = file.name.split('.').slice(0, -1).join('.');
-                const reader = new FileReader();
-                reader.onload = (e) => { localImageMap[sku] = e.target.result; updateAllViews(); };
-                reader.readAsDataURL(file);
-            });
-            event.target.value = ''; 
-            showToast('Imágenes vinculadas');
         }
 
         function saveWpConfig() {
@@ -719,7 +708,7 @@
                 card.className = 'print-card';
                 card.innerHTML = `
                     <div class="print-title">LOS NONOS</div>
-                    <img src="${qrImgSrc}" alt="QR Mesa ${table}">
+                    <img src="${qrImgSrc}" alt="QR Mesa ${table}" loading="lazy">
                     <div class="print-mesa">MESA ${table}</div>
                     <div class="print-instructions">ESCANEÁ PARA VER EL MENÚ</div>
                 `;
