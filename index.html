@@ -6,7 +6,7 @@
     <title>Los Nonos | Sistema Híbrido</title>
     <!-- SheetJS para Excel -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    <!-- Librería nativa para generar QR sin depender de APIs externas -->
+    <!-- Librería local para generar QR sin fallas -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     
     <!-- Firebase SDKs -->
@@ -68,11 +68,10 @@
 
         .sidebar {
             width: 260px; background: var(--surface-light); border-right: 1px solid var(--border-light);
-            padding: 24px; display: flex; flex-direction: column; gap: 16px; z-index: 20;
+            padding: 24px; display: flex; flex-direction: column; gap: 16px; z-index: 20; flex-shrink: 0;
         }
         @media (max-width: 768px) {
-            .sidebar { position: absolute; transform: translateX(-100%); transition: transform 0.3s; }
-            .sidebar.open { transform: translateX(0); }
+            .sidebar { display: none; } /* Ocultamos sidebar compleja en celu para priorizar UX móvil limpia */
         }
         
         .brand { font-size: 24px; font-weight: 800; color: var(--primary); margin-bottom: 16px; }
@@ -84,8 +83,8 @@
         .nav-item.active { background: rgba(255, 59, 48, 0.1); color: var(--primary); }
 
         .main-content { flex: 1; overflow-y: auto; position: relative; scroll-behavior: smooth; }
-        .view-container { padding: 40px; min-height: 100%; padding-bottom: 100px; }
-        @media (max-width: 768px) { .view-container { padding: 20px; padding-bottom: 100px; } }
+        .view-container { padding: 32px; min-height: 100%; padding-bottom: 120px; }
+        @media (max-width: 768px) { .view-container { padding: 16px; padding-bottom: 120px; } }
         .hidden { display: none !important; }
 
         .btn {
@@ -122,35 +121,53 @@
         .action-icon { cursor: pointer; color: var(--text-muted-dark); padding: 4px; display: flex; align-items: center; justify-content: center; }
 
         #view-client { background-color: var(--bg-light); color: var(--text-main-light); max-width: 1000px; margin: 0 auto; }
-        .client-header { margin-bottom: 24px; text-align: center; }
-        .client-header h1 { font-size: 28px; font-weight: 800; color: var(--text-main-light); }
+        .client-header { margin-bottom: 20px; text-align: center; display: flex; justify-content: space-between; align-items: center; }
+        .client-header h1 { font-size: 24px; font-weight: 800; color: var(--text-main-light); width: 100%; }
         
-        .categories-container { display: flex; gap: 10px; margin-bottom: 24px; flex-wrap: wrap; }
-        .cat-chip { padding: 8px 20px; background: var(--surface-light); border: 1px solid var(--border-light); border-radius: 99px; font-size: 14px; font-weight: 600; color: var(--text-muted-light); cursor: pointer; white-space: nowrap; box-shadow: var(--shadow-sm); transition: 0.2s; }
+        /* --- CORRECCIÓN DE CATEGORÍAS MÓVILES (Scroll horizontal fluido en una sola línea) --- */
+        .categories-container { 
+            display: flex; gap: 8px; margin-bottom: 24px; overflow-x: auto; padding-bottom: 8px; 
+            white-space: nowrap; -webkit-overflow-scrolling: touch; scrollbar-width: none; 
+        }
+        .categories-container::-webkit-scrollbar { display: none; }
+        .cat-chip { 
+            padding: 8px 16px; background: var(--surface-light); border: 1px solid var(--border-light); 
+            border-radius: 99px; font-size: 13px; font-weight: 600; color: var(--text-muted-light); 
+            cursor: pointer; flex-shrink: 0; box-shadow: var(--shadow-sm); transition: 0.2s; 
+        }
         .cat-chip.active { background: var(--text-main-light); color: white; border-color: var(--text-main-light); }
 
-        .client-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 16px; }
-        @media (min-width: 600px) { .client-grid { grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 24px; } }
+        .client-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; }
+        @media (min-width: 600px) { .client-grid { grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 20px; } }
         
         .client-card { background: var(--surface-light); border: 1px solid var(--border-light); border-radius: var(--radius-lg); overflow: hidden; display: flex; flex-direction: column; box-shadow: var(--shadow-sm); }
         .client-img { width: 100%; aspect-ratio: 4/3; object-fit: cover; border-bottom: 1px solid var(--border-light); background: #E5E7EB; }
         .client-info { padding: 12px; display: flex; flex-direction: column; flex: 1; }
-        .client-title { font-size: 15px; font-weight: 700; margin-bottom: 4px; line-height: 1.2; }
-        .client-desc { font-size: 12px; color: var(--text-muted-light); margin-bottom: 12px; line-height: 1.3; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-        .client-price { font-size: 16px; color: var(--text-main-light); font-weight: 800; margin-bottom: 12px; }
+        .client-title { font-size: 14px; font-weight: 700; margin-bottom: 4px; line-height: 1.2; }
+        .client-desc { font-size: 11px; color: var(--text-muted-light); margin-bottom: 10px; line-height: 1.3; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+        .client-price { font-size: 15px; color: var(--text-main-light); font-weight: 800; margin-bottom: 10px; }
         .add-btn { width: 100%; background: var(--primary); color: white; border: none; padding: 8px; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 13px; }
         
-        .cart-bar {
+        /* Barra de navegación inferior móvil para alternar rápido entre Catálogo y Admin */
+        .mobile-nav {
             position: fixed; bottom: 0; left: 0; right: 0; background: var(--surface-light); border-top: 1px solid var(--border-light);
-            padding: 16px 24px; display: flex; justify-content: space-between; align-items: center;
-            box-shadow: 0 -4px 10px rgba(0,0,0,0.05); z-index: 50; transform: translateY(100%); transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex; justify-content: space-around; padding: 10px 0; z-index: 60; box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
+        }
+        @media (min-width: 768px) { .mobile-nav { display: none; } }
+        .mob-nav-item { font-size: 12px; font-weight: 600; color: var(--text-muted-light); cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 2px; }
+        .mob-nav-item.active { color: var(--primary); }
+
+        .cart-bar {
+            position: fixed; bottom: 56px; left: 0; right: 0; background: var(--surface-light); border-top: 1px solid var(--border-light);
+            padding: 14px 20px; display: flex; justify-content: space-between; align-items: center;
+            box-shadow: 0 -4px 10px rgba(0,0,0,0.05); z-index: 50; transform: translateY(200%); transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
         .cart-bar.visible { transform: translateY(0); }
-        @media (min-width: 1000px) { .cart-bar { left: 260px; } }
+        @media (min-width: 768px) { .cart-bar { bottom: 0; left: 260px; } }
         .cart-info { display: flex; flex-direction: column; }
-        .cart-total { font-size: 18px; font-weight: 800; color: var(--text-main-light); }
-        .cart-items-count { font-size: 13px; color: var(--text-muted-light); font-weight: 500; }
-        .cart-btn { background: var(--primary); color: white; border: none; padding: 12px 24px; border-radius: 8px; font-weight: 700; cursor: pointer; font-size: 15px; display: flex; gap: 8px; align-items: center; }
+        .cart-total { font-size: 17px; font-weight: 800; color: var(--text-main-light); }
+        .cart-items-count { font-size: 12px; color: var(--text-muted-light); font-weight: 500; }
+        .cart-btn { background: var(--primary); color: white; border: none; padding: 10px 20px; border-radius: 8px; font-weight: 700; cursor: pointer; font-size: 14px; display: flex; gap: 6px; align-items: center; }
 
         .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.6); display: flex; align-items: flex-end; justify-content: center; opacity: 0; pointer-events: none; transition: 0.2s; z-index: 1000; }
         @media (min-width: 768px) { .modal-overlay { align-items: center; padding: 24px; } }
@@ -161,38 +178,37 @@
         .modal-overlay.active .modal-content { transform: translateY(0); }
         @media (min-width: 768px) { .modal-overlay.active .modal-content { transform: scale(1); } }
 
-        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
         .modal-header h2 { font-size: 20px; font-weight: 800; }
         
-        .checkout-items { flex: 1; overflow-y: auto; margin-bottom: 24px; padding-right: 8px; }
-        .cart-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid var(--border-light); }
+        .checkout-items { flex: 1; overflow-y: auto; margin-bottom: 20px; padding-right: 4px; }
+        .cart-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--border-light); }
         .item-details { flex: 1; }
-        .item-name { font-size: 14px; font-weight: 600; margin-bottom: 4px; }
-        .item-price { font-size: 14px; color: var(--primary); font-weight: 700; }
-        .item-controls { display: flex; align-items: center; gap: 12px; background: var(--bg-light); border-radius: 8px; padding: 4px; }
-        .ctrl-btn { width: 28px; height: 28px; border: none; background: white; border-radius: 6px; font-weight: bold; cursor: pointer; box-shadow: var(--shadow-sm); }
-        .item-qty { font-size: 14px; font-weight: 600; width: 20px; text-align: center; }
+        .item-name { font-size: 14px; font-weight: 600; margin-bottom: 2px; }
+        .item-price { font-size: 13px; color: var(--primary); font-weight: 700; }
+        .item-controls { display: flex; align-items: center; gap: 10px; background: var(--bg-light); border-radius: 8px; padding: 4px; }
+        .ctrl-btn { width: 26px; height: 26px; border: none; background: white; border-radius: 6px; font-weight: bold; cursor: pointer; box-shadow: var(--shadow-sm); }
+        .item-qty { font-size: 13px; font-weight: 600; width: 18px; text-align: center; }
 
-        .order-type-tabs { display: flex; background: var(--bg-light); padding: 4px; border-radius: 8px; margin-bottom: 16px; }
-        .order-tab { flex: 1; padding: 8px; text-align: center; font-size: 13px; font-weight: 600; cursor: pointer; border-radius: 6px; color: var(--text-muted-light); }
+        .order-type-tabs { display: flex; background: var(--bg-light); padding: 4px; border-radius: 8px; margin-bottom: 14px; }
+        .order-tab { flex: 1; padding: 8px; text-align: center; font-size: 12px; font-weight: 600; cursor: pointer; border-radius: 6px; color: var(--text-muted-light); }
         .order-tab.active { background: white; color: var(--text-main-light); box-shadow: var(--shadow-sm); }
         
-        .form-group { margin-bottom: 16px; }
-        .form-group label { display: block; font-size: 13px; color: var(--text-muted-light); margin-bottom: 6px; font-weight: 600; }
-        .form-control { width: 100%; padding: 12px; border: 1px solid var(--border-light); border-radius: 8px; font-size: 15px; outline: none; }
+        .form-group { margin-bottom: 14px; }
+        .form-group label { display: block; font-size: 12px; color: var(--text-muted-light); margin-bottom: 4px; font-weight: 600; }
+        .form-control { width: 100%; padding: 10px; border: 1px solid var(--border-light); border-radius: 8px; font-size: 14px; outline: none; }
         .form-control:focus { border-color: var(--primary); }
         
         #crudModal .modal-content { background: var(--surface-dark); border: 1px solid var(--border-dark); color: white; border-radius: 16px; align-self: center; max-height: 85vh; overflow-y: auto;}
         #crudModal .form-group label { color: var(--text-muted-dark); }
         #crudModal .form-control { background: #151B2B; border-color: var(--border-dark); color: white; }
 
-        .toast { position: fixed; top: 24px; left: 50%; transform: translateX(-50%) translateY(-100px); background: var(--success); color: white; padding: 12px 24px; border-radius: 8px; font-weight: 600; box-shadow: var(--shadow-lg); transition: 0.3s; z-index: 2000; }
+        .toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%) translateY(-100px); background: var(--success); color: white; padding: 10px 20px; border-radius: 8px; font-weight: 600; box-shadow: var(--shadow-lg); transition: 0.3s; z-index: 2000; }
         .toast.show { transform: translateX(-50%) translateY(0); }
         
-        .fab-top { position: fixed; bottom: 32px; right: 32px; width: 56px; height: 56px; border-radius: 50%; background: var(--text-main-light); color: white; border: none; box-shadow: var(--shadow-lg); cursor: pointer; display: flex; align-items: center; justify-content: center; opacity: 0; pointer-events: none; transition: all 0.3s ease; transform: translateY(20px); z-index: 100; }
+        .fab-top { position: fixed; bottom: 70px; right: 20px; width: 48px; height: 48px; border-radius: 50%; background: var(--text-main-light); color: white; border: none; box-shadow: var(--shadow-lg); cursor: pointer; display: flex; align-items: center; justify-content: center; opacity: 0; pointer-events: none; transition: all 0.3s ease; transform: translateY(20px); z-index: 100; }
         .fab-top.visible { opacity: 1; pointer-events: auto; transform: translateY(0); }
 
-        /* --- ESTILOS DE IMPRESIÓN MASIVA EN GRILLA A4 --- */
         #printSheetContainer { display: none; }
 
         @media print {
@@ -210,34 +226,53 @@
 </head>
 <body>
 
+    <!-- Sidebar de Escritorio -->
     <div class="sidebar" id="sidebar">
         <div class="brand">Los Nonos.</div>
         <nav style="display: flex; flex-direction: column; gap: 8px;">
-            <div class="nav-item active" onclick="switchTab('client')">
+            <div class="nav-item active" onclick="switchTab('client', event)">
                 <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"></path></svg>
                 Catálogo Público
             </div>
-            <div class="nav-item" onclick="switchTab('admin')">
+            <div class="nav-item" onclick="switchTab('admin', event)">
                 <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"></path></svg>
                 Gestión Admin
             </div>
-            <div class="nav-item" onclick="switchTab('qr')">
+            <div class="nav-item" onclick="switchTab('qr', event)">
                 <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"></path></svg>
-                Herramientas
+                Herramientas QR
             </div>
         </nav>
     </div>
 
+    <!-- Barra de navegación inferior para Celular -->
+    <div class="mobile-nav">
+        <div class="mob-nav-item active" id="mob-btn-client" onclick="switchTab('client', event)">
+            <svg width="22" height="22" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>
+            Menú
+        </div>
+        <div class="mob-nav-item" id="mob-btn-admin" onclick="switchTab('admin', event)">
+            <svg width="22" height="22" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+            Admin
+        </div>
+        <div class="mob-nav-item" id="mob-btn-qr" onclick="switchTab('qr', event)">
+            <svg width="22" height="22" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"></path></svg>
+            QR Mesas
+        </div>
+    </div>
+
     <div class="main-content" id="mainScroll">
         
+        <!-- VISTA CLIENTE -->
         <div id="view-client" class="view-container">
             <div class="client-header">
-                <h1>Menú Digital</h1>
+                <h1>Los Nonos. <span style="font-size: 14px; font-weight: normal; color: var(--text-muted-light);" id="mesaBadge"></span></h1>
             </div>
             <div class="categories-container" id="clientCategories"></div>
             <div class="client-grid" id="clientGrid"></div>
         </div>
 
+        <!-- VISTA ADMIN -->
         <div id="view-admin" class="view-container hidden">
             <div class="header-actions">
                 <div>
@@ -251,8 +286,8 @@
                     <button class="btn btn-outline" onclick="downloadExcelTemplate()">📥 Modelo Excel</button>
                     <input type="file" id="excelFileInput" accept=".xlsx" class="hidden" onchange="importExcel(event)">
                     <button class="btn btn-outline" onclick="document.getElementById('excelFileInput').click()">⬆️️ Subir Excel</button>
-                    <button class="btn btn-blue" onclick="exportExcelBackup()">⬇️ Bajar Backup</button>
-                    <button class="btn btn-yellow" onclick="bulkAdjustPrices()">% Ajustar %</button>
+                    <button class="btn btn-blue" onclick="exportExcelBackup()">⬇️ Backup</button>
+                    <button class="btn btn-yellow" onclick="bulkAdjustPrices()">% Ajustar</button>
                 </div>
             </div>
             <div class="admin-table">
@@ -263,8 +298,9 @@
             </div>
         </div>
 
+        <!-- VISTA HERRAMIENTAS QR -->
         <div id="view-qr" class="view-container hidden">
-            <h1 style="color:var(--text-main-light); margin-bottom: 24px;">Operaciones</h1>
+            <h1 style="color:var(--text-main-light); margin-bottom: 24px;">Herramientas y Operaciones</h1>
             
             <div style="display: flex; flex-direction: column; gap: 24px;">
                 <div style="background: white; padding: 24px; border-radius: 16px; border: 1px solid var(--border-light); display: flex; gap: 24px; flex-wrap: wrap;">
@@ -299,26 +335,28 @@
 
     <div id="printSheetContainer"></div>
 
+    <!-- Barra de Carrito flotante -->
     <div id="cartBar" class="cart-bar">
         <div class="cart-info">
             <span class="cart-items-count" id="cartCountInfo">0 items</span>
             <span class="cart-total" id="cartTotalInfo">$0</span>
         </div>
         <button class="cart-btn" onclick="openCheckoutModal()">
-            Ver Pedido <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
+            Ver Pedido <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
         </button>
     </div>
 
+    <!-- Modal de Checkout / Pedido -->
     <div class="modal-overlay" id="checkoutModal">
         <div class="modal-content">
             <div class="modal-header">
                 <h2>Tu Pedido</h2>
-                <button style="background:none; border:none; font-size:24px; cursor:pointer;" onclick="closeCheckoutModal()">✕</button>
+                <button style="background:none; border:none; font-size:22px; cursor:pointer;" onclick="closeCheckoutModal()">✕</button>
             </div>
             
             <div class="checkout-items" id="checkoutItemsList"></div>
 
-            <div style="border-top: 1px solid var(--border-light); padding-top: 16px;">
+            <div style="border-top: 1px solid var(--border-light); padding-top: 14px;">
                 <div class="order-type-tabs">
                     <div class="order-tab active" onclick="setOrderType('mesa')" id="tab-mesa">En el Local</div>
                     <div class="order-tab" onclick="setOrderType('takeaway')" id="tab-takeaway">Retiro</div>
@@ -340,23 +378,24 @@
                     <input type="text" id="inputName" class="form-control" placeholder="¿Cómo te llamás?">
                 </div>
 
-                <button class="btn btn-red" style="width: 100%; padding: 16px; font-size: 16px; margin-top: 8px;" onclick="sendOrder()">
-                    Enviar por WhatsApp
+                <button class="btn btn-red" style="width: 100%; padding: 14px; font-size: 15px; margin-top: 6px;" onclick="sendOrder()">
+                    Enviar Pedido por WhatsApp
                 </button>
             </div>
         </div>
     </div>
 
+    <!-- Modal CRUD Admin -->
     <div class="modal-overlay" id="crudModal">
         <div class="modal-content">
-            <h2 id="modalCrudTitle" style="margin-bottom: 24px;">Editar Plato</h2>
+            <h2 id="modalCrudTitle" style="margin-bottom: 20px;">Editar Plato</h2>
             <div class="form-group"><label>SKU</label><input type="text" id="crudSku" class="form-control" disabled></div>
             <div class="form-group"><label>Nombre del Plato</label><input type="text" id="crudName" class="form-control"></div>
             <div class="form-group"><label>Categoría</label><input type="text" id="crudCat" class="form-control"></div>
             <div class="form-group"><label>Precio ($)</label><input type="number" id="crudPrice" class="form-control"></div>
             <div class="form-group"><label>URL de la Foto (Link web)</label><input type="text" id="crudImg" class="form-control" placeholder="https://ejemplo.com/foto.jpg"></div>
             <div class="form-group"><label>Descripción</label><textarea id="crudDesc" class="form-control" rows="3" placeholder="Ingredientes, aclaraciones..."></textarea></div>
-            <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 24px;">
+            <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 20px;">
                 <button class="btn btn-outline" onclick="closeCrudModal()">Cancelar</button>
                 <button class="btn btn-red" onclick="saveProduct()">Guardar</button>
             </div>
@@ -365,7 +404,7 @@
 
     <div class="toast" id="toast">Acción completada</div>
     <button class="fab-top" id="fabTop" onclick="scrollToTop()">
-        <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 10l7-7m0 0l7 7m-7-7v18"></path></svg>
+        <svg width="22" height="22" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 10l7-7m0 0l7 7m-7-7v18"></path></svg>
     </button>
 
     <script>
@@ -384,10 +423,10 @@
                 
                 if(db.length === 0) {
                     db = [
-                        { sku: "COMBO-1", category: "PROMOS DE PARRILLA Y COMBOS", name: "PARRILLADA SUPER COMPLETA", desc: "Variedad de cortes premium y guarnición.", price: 113400, img: "" },
-                        { sku: "COMBO-2", category: "PROMOS DE PARRILLA Y COMBOS", name: "PARRILLADA P/2 COMPLETA", desc: "Mix de carnes para compartir.", price: 93400, img: "" },
-                        { sku: "ENT-1", category: "ENTRADAS Y EMPANADAS", name: "DOCENA DE EMPANADAS", desc: "Carne / Pollo / JyQ.", price: 40000, img: "" },
-                        { sku: "SAN-1", category: "SANGUCHES DE LA CASA!", name: "SANGUCHAZO DE VACIO", desc: "Pan francés crocante con chimichurri.", price: 26700, img: "" }
+                        { sku: "COMBO-1", category: "PROMOS Y COMBOS", name: "PARRILLADA SUPER COMPLETA", desc: "Variedad de cortes premium y guarnición.", price: 113400, img: "" },
+                        { sku: "COMBO-2", category: "PROMOS Y COMBOS", name: "PARRILLADA P/2 COMPLETA", desc: "Mix de carnes para compartir.", price: 93400, img: "" },
+                        { sku: "ENT-1", category: "ENTRADAS", name: "DOCENA DE EMPANADAS", desc: "Carne / Pollo / JyQ.", price: 40000, img: "" },
+                        { sku: "SAN-1", category: "SANGUCHES", name: "SANGUCHAZO DE VACIO", desc: "Pan francés crocante con chimichurri.", price: 26700, img: "" }
                     ];
                     for(const p of db) {
                         await window.fbSetDoc(window.fbDoc(window.fbDb, "productos", p.sku), p);
@@ -423,6 +462,7 @@
             const mesaFromUrl = urlParams.get('mesa');
             if(mesaFromUrl) {
                 document.getElementById('inputMesa').value = mesaFromUrl;
+                document.getElementById('mesaBadge').textContent = `(Mesa ${mesaFromUrl})`;
             }
 
             const savedWP = localStorage.getItem('losnonos_wp');
@@ -433,9 +473,16 @@
         const formatPrice = (price) => new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 }).format(price);
         const getImageUrl = (p) => (p.img && p.img.trim() !== "") ? p.img : `https://source.unsplash.com/random/400x300/?food,${p.sku}`;
 
-        function switchTab(viewId) {
+        function switchTab(viewId, event) {
             document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
-            event.currentTarget.classList.add('active');
+            document.querySelectorAll('.mob-nav-item').forEach(el => el.classList.remove('active'));
+            
+            if(event && event.currentTarget) {
+                event.currentTarget.classList.add('active');
+            }
+            if(document.getElementById(`mob-btn-${viewId}`)) {
+                document.getElementById(`mob-btn-${viewId}`).classList.add('active');
+            }
             
             ['admin', 'client', 'qr'].forEach(id => document.getElementById(`view-${id}`).classList.add('hidden'));
             document.getElementById(`view-${viewId}`).classList.remove('hidden');
@@ -703,7 +750,7 @@
                 reader.readAsDataURL(file);
             });
             event.target.value = ''; 
-            showToast('Imágenes masivas vinculadas y guardadas en la nube');
+            showToast('Imágenes masivas vinculadas');
         }
 
         function saveWpConfig() {
@@ -716,7 +763,6 @@
             navigator.clipboard.writeText(`¡Hola! 👋 Mirá nuestro menú y hacé tu pedido acá:\n\n👉 ${url}`).then(() => showToast("Link copiado"));
         }
 
-        // --- IMPRESIÓN MASIVA CON QR LOCAL INTEGRADO ---
         function printMultipleQRs() {
             let baseUrl = document.getElementById('publicUrlDisplay').value;
             if(baseUrl.includes("Hosteá") || baseUrl.includes("tu-app")) baseUrl = window.location.href;
@@ -742,7 +788,6 @@
                 `;
                 container.appendChild(card);
 
-                // Generar QR localmente usando qrcode.js
                 new QRCode(document.getElementById(`qr-target-${table}`), {
                     text: finalUrl,
                     width: 120,
@@ -753,10 +798,7 @@
                 });
             });
 
-            // Dar un pequeñísimo respiro al navegador para renderizar los canvas antes de abrir la impresión
-            setTimeout(() => {
-                window.print();
-            }, 300);
+            setTimeout(() => { window.print(); }, 300);
         }
 
         function showToast(msg) {
@@ -774,7 +816,7 @@
                 }
             });
         }
-        function scrollToTop() { document.getElementById('mainScroll')->scrollTo({ top: 0, behavior: 'smooth' }); }
+        function scrollToTop() { document.getElementById('mainScroll').scrollTo({ top: 0, behavior: 'smooth' }); }
     </script>
 </body>
 </html>
