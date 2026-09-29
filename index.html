@@ -267,22 +267,17 @@
                     </div>
                 </div>
 
-                <!-- Impresión Masiva de QR por Mesa Corregida -->
+                <!-- Impresión Personalizada por Lista de Mesas -->
                 <div style="background: white; padding: 24px; border-radius: 16px; border: 1px solid var(--border-light);">
-                    <h3 style="margin-bottom: 12px; color: var(--text-main-light);">Impresión Masiva de QR por Mesa</h3>
-                    <p style="color: var(--text-muted-light); margin-bottom: 24px; font-size: 13px;">Cada QR se generará con su respectiva identificación de mesa integrada de forma única.</p>
+                    <h3 style="margin-bottom: 12px; color: var(--text-main-light);">Generador y Lote de Mesas</h3>
+                    <p style="color: var(--text-muted-light); margin-bottom: 20px; font-size: 13px;">Escribí los números o nombres de las mesas separados por comas. Se generará un QR único para cada una en una hoja lista para imprimir.</p>
                     
-                    <div style="display: flex; gap: 16px; align-items: flex-end; flex-wrap: wrap;">
-                        <div style="flex: 1; min-width: 140px;">
-                            <label style="display:block; font-size:13px; font-weight:600; color:var(--text-muted-light); margin-bottom:6px;">Desde la Mesa N°</label>
-                            <input type="number" id="qrFrom" value="1" class="form-control">
-                        </div>
-                        <div style="flex: 1; min-width: 140px;">
-                            <label style="display:block; font-size:13px; font-weight:600; color:var(--text-muted-light); margin-bottom:6px;">Hasta la Mesa N°</label>
-                            <input type="number" id="qrTo" value="12" class="form-control">
-                        </div>
-                        <button class="btn btn-blue" onclick="printMultipleQRs()" style="height: 46px; padding: 0 24px;">🖨️ Imprimir Lote A4</button>
+                    <div class="form-group">
+                        <label>Mesas a generar (ej: 1, 2, 3, 4, 5, 12 o VIP 1, Barra)</label>
+                        <input type="text" id="qrTablesInput" value="1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12" class="form-control" style="max-width: 100%; margin-bottom: 16px;">
                     </div>
+                    
+                    <button class="btn btn-blue" onclick="printMultipleQRs()" style="padding: 12px 24px;">🖨️ Imprimir Lote A4 de Mesas</button>
                 </div>
             </div>
         </div>
@@ -321,7 +316,7 @@
 
                 <div class="form-group" id="field-mesa">
                     <label>Número de Mesa</label>
-                    <input type="number" id="inputMesa" class="form-control" placeholder="Ej: 12">
+                    <input type="text" id="inputMesa" class="form-control" placeholder="Ej: 12 o Barra">
                 </div>
                 
                 <div class="form-group hidden" id="field-delivery">
@@ -595,7 +590,7 @@
                 const json = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]]);
                 if (json.length === 0) return;
                 json.forEach((row, i) => {
-                    const sku = row.SKU || `SKU-${Date.Now()}-${i}`;
+                    const sku = row.SKU || `SKU-${Date.now()}-${i}`;
                     const index = db.findIndex(p => p.sku === sku);
                     const newP = { sku, category: row.Categoría || 'Gral', name: row.Plato || 'Sin Nombre', desc: row.Descripción || '', price: parseFloat(String(row.Precio||'0').replace(/\D/g,'')) };
                     if (index > -1) db[index] = newP; else db.push(newP);
@@ -626,39 +621,37 @@
             navigator.clipboard.writeText(`¡Hola! 👋 Mirá nuestro menú y hacé tu pedido acá:\n\n👉 ${url}`).then(() => showToast("Link copiado"));
         }
 
-        // --- IMPRESIÓN MASIVA A4 CON PARÁMETRO DE MESA ÚNICO ---
+        // --- IMPRESIÓN MASIVA POR LISTA LIBRE DE MESAS ---
         function printMultipleQRs() {
             let baseUrl = document.getElementById('publicUrlDisplay').value;
             if(baseUrl.includes("Hosteá") || baseUrl.includes("tu-app")) baseUrl = window.location.href;
-            
-            // Limpiar parámetros previos si los tuviera
             baseUrl = baseUrl.split('?')[0];
 
-            const fromMesa = parseInt(document.getElementById('qrFrom').value) || 1;
-            const toMesa = parseInt(document.getElementById('qrTo').value) || 12;
-
-            if(fromMesa > toMesa) {
-                alert("La mesa inicial no puede ser mayor a la final.");
+            const inputVal = document.getElementById('qrTablesInput').value.trim();
+            if(!inputVal) {
+                alert("Por favor ingresa los números de las mesas.");
                 return;
             }
+
+            // Separa por comas (ej: "1, 2, 5, 12" -> ["1", "2", "5", "12"])
+            const tables = inputVal.split(',').map(t => t.trim()).filter(t => t !== '');
 
             const container = document.getElementById('printSheetContainer');
             container.innerHTML = '';
 
-            for(let i = fromMesa; i <= toMesa; i++) {
-                // AQUÍ ESTÁ LA MAGIA: Cada QR lleva su ?mesa=X único
-                const mesaUrl = `${baseUrl}?mesa=${i}`;
-                const qrImgSrc = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(mesaUrl)}`;
+            tables.forEach(table => {
+                const finalUrl = `${baseUrl}?mesa=${encodeURIComponent(table)}`;
+                const qrImgSrc = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(finalUrl)}`;
 
                 const card = document.createElement('div');
                 card.className = 'print-card';
                 card.innerHTML = `
                     <div class="print-title">LOS NONOS</div>
-                    <img src="${qrImgSrc}" alt="QR Mesa ${i}">
-                    <div class="print-mesa">MESA ${i}</div>
+                    <img src="${qrImgSrc}" alt="QR Mesa ${table}">
+                    <div class="print-mesa">MESA ${table}</div>
                 `;
                 container.appendChild(card);
-            }
+            });
 
             window.print();
         }
