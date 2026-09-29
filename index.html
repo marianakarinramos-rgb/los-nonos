@@ -7,6 +7,35 @@
     <!-- SheetJS para Excel -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     
+    <!-- Firebase SDKs -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getFirestore, collection, getDocs, setDoc, doc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyAv7UWA2hPnNI_0X9aoMnA5elBJYgO4K40",
+            authDomain: "los-nonos-7f46c.firebaseapp.com",
+            projectId: "los-nonos-7f46c",
+            storageBucket: "los-nonos-7f46c.firebasestorage.app",
+            messagingSenderId: "40107629073",
+            appId: "1:40107629073:web:a8c209fdc9d2d0ebba6fb0"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        // Exponer funciones de Firebase globalmente para la app
+        window.fbDb = db;
+        window.fbCollection = collection;
+        window.fbGetDocs = getDocs;
+        window.fbSetDoc = setDoc;
+        window.fbDoc = doc;
+        window.fbDeleteDoc = deleteDoc;
+        
+        // Disparar carga inicial desde Firebase al iniciar
+        if(window.initAppFromFirebase) window.initAppFromFirebase();
+    </script>
+    
     <style>
         :root {
             --primary: #FF3B30;
@@ -37,7 +66,6 @@
         
         body { display: flex; height: 100vh; overflow: hidden; background: var(--bg-light); color: var(--text-main-light); }
 
-        /* --- SIDEBAR (ADMIN) --- */
         .sidebar {
             width: 260px; background: var(--surface-light); border-right: 1px solid var(--border-light);
             padding: 24px; display: flex; flex-direction: column; gap: 16px; z-index: 20;
@@ -55,13 +83,11 @@
         .nav-item:hover { background: rgba(255, 59, 48, 0.05); color: var(--text-main-light); }
         .nav-item.active { background: rgba(255, 59, 48, 0.1); color: var(--primary); }
 
-        /* --- MAIN CONTENT --- */
         .main-content { flex: 1; overflow-y: auto; position: relative; scroll-behavior: smooth; }
         .view-container { padding: 40px; min-height: 100%; padding-bottom: 100px; }
         @media (max-width: 768px) { .view-container { padding: 20px; padding-bottom: 100px; } }
         .hidden { display: none !important; }
 
-        /* --- BOTONES --- */
         .btn {
             border: none; padding: 10px 16px; border-radius: 8px; font-weight: 600; cursor: pointer; 
             transition: all 0.2s ease; font-size: 14px; display: inline-flex; align-items: center; justify-content: center; gap: 8px; color: white;
@@ -74,7 +100,6 @@
         .btn-outline { background: transparent; border: 1px solid var(--border-dark); color: var(--text-main-dark); }
         .btn-outline-light { background: transparent; border: 1px solid var(--border-light); color: var(--text-main-light); }
 
-        /* --- VISTA ADMIN --- */
         #view-admin { background-color: var(--bg-dark); color: var(--text-main-dark); }
         #view-admin .header-actions { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 32px; gap: 16px; flex-wrap: wrap;}
         #view-admin h1 { font-size: 28px; margin-bottom: 4px; }
@@ -96,7 +121,6 @@
         .col-acciones { display: flex; gap: 12px; }
         .action-icon { cursor: pointer; color: var(--text-muted-dark); padding: 4px; display: flex; align-items: center; justify-content: center; }
 
-        /* --- VISTA CLIENTE --- */
         #view-client { background-color: var(--bg-light); color: var(--text-main-light); max-width: 1000px; margin: 0 auto; }
         .client-header { margin-bottom: 24px; text-align: center; }
         .client-header h1 { font-size: 28px; font-weight: 800; color: var(--text-main-light); }
@@ -116,7 +140,6 @@
         .client-price { font-size: 16px; color: var(--text-main-light); font-weight: 800; margin-bottom: 12px; }
         .add-btn { width: 100%; background: var(--primary); color: white; border: none; padding: 8px; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 13px; }
         
-        /* --- CARRITO FLOTANTE --- */
         .cart-bar {
             position: fixed; bottom: 0; left: 0; right: 0; background: var(--surface-light); border-top: 1px solid var(--border-light);
             padding: 16px 24px; display: flex; justify-content: space-between; align-items: center;
@@ -129,7 +152,6 @@
         .cart-items-count { font-size: 13px; color: var(--text-muted-light); font-weight: 500; }
         .cart-btn { background: var(--primary); color: white; border: none; padding: 12px 24px; border-radius: 8px; font-weight: 700; cursor: pointer; font-size: 15px; display: flex; gap: 8px; align-items: center; }
 
-        /* --- MODALES --- */
         .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.6); display: flex; align-items: flex-end; justify-content: center; opacity: 0; pointer-events: none; transition: 0.2s; z-index: 1000; }
         @media (min-width: 768px) { .modal-overlay { align-items: center; padding: 24px; } }
         .modal-overlay.active { opacity: 1; pointer-events: auto; }
@@ -170,7 +192,6 @@
         .fab-top { position: fixed; bottom: 32px; right: 32px; width: 56px; height: 56px; border-radius: 50%; background: var(--text-main-light); color: white; border: none; box-shadow: var(--shadow-lg); cursor: pointer; display: flex; align-items: center; justify-content: center; opacity: 0; pointer-events: none; transition: all 0.3s ease; transform: translateY(20px); z-index: 100; }
         .fab-top.visible { opacity: 1; pointer-events: auto; transform: translateY(0); }
 
-        /* --- ESTILOS DE IMPRESIÓN MASIVA EN GRILLA A4 --- */
         #printSheetContainer { display: none; }
 
         @media print {
@@ -187,7 +208,6 @@
 </head>
 <body>
 
-    <!-- SIDEBAR -->
     <div class="sidebar" id="sidebar">
         <div class="brand">Los Nonos.</div>
         <nav style="display: flex; flex-direction: column; gap: 8px;">
@@ -206,10 +226,8 @@
         </nav>
     </div>
 
-    <!-- MAIN CONTENT -->
     <div class="main-content" id="mainScroll">
         
-        <!-- VISTA CLIENTE -->
         <div id="view-client" class="view-container">
             <div class="client-header">
                 <h1>Menú Digital</h1>
@@ -218,23 +236,20 @@
             <div class="client-grid" id="clientGrid"></div>
         </div>
 
-        <!-- VISTA ADMIN -->
         <div id="view-admin" class="view-container hidden">
             <div class="header-actions">
                 <div>
                     <h1>Gestión de Menú</h1>
-                    <p class="sub">Control total. Modificá platos y actualizá precios.</p>
+                    <p class="sub">Control total sincronizado con Firebase Firestore.</p>
                 </div>
                 <div class="admin-toolbar">
                     <input type="file" id="massImageInput" multiple accept="image/*" class="hidden" onchange="handleMassiveImages(event)">
                     <button class="btn btn-outline" onclick="document.getElementById('massImageInput').click()">📷 Fotos Masivas</button>
                     <button class="btn btn-red" onclick="openCrudModal()">+ Plato</button>
-                    
                     <button class="btn btn-outline" onclick="downloadExcelTemplate()">📥 Modelo Excel</button>
                     <input type="file" id="excelFileInput" accept=".xlsx" class="hidden" onchange="importExcel(event)">
                     <button class="btn btn-outline" onclick="document.getElementById('excelFileInput').click()">⬆️ Subir Excel</button>
                     <button class="btn btn-blue" onclick="exportExcelBackup()">⬇️ Bajar Backup</button>
-                    
                     <button class="btn btn-yellow" onclick="bulkAdjustPrices()">% Ajustar %</button>
                 </div>
             </div>
@@ -246,7 +261,6 @@
             </div>
         </div>
 
-        <!-- VISTA HERRAMIENTAS -->
         <div id="view-qr" class="view-container hidden">
             <h1 style="color:var(--text-main-light); margin-bottom: 24px;">Operaciones</h1>
             
@@ -268,26 +282,21 @@
                     </div>
                 </div>
 
-                <!-- Impresión Masiva con instrucciones claras -->
                 <div style="background: white; padding: 24px; border-radius: 16px; border: 1px solid var(--border-light);">
                     <h3 style="margin-bottom: 12px; color: var(--text-main-light);">Generador y Lote de Mesas</h3>
-                    <p style="color: var(--text-muted-light); margin-bottom: 20px; font-size: 13px;">Escribí los números o nombres de las mesas separados por comas. Cada tarjeta incluirá la instrucción para el comensal.</p>
-                    
+                    <p style="color: var(--text-muted-light); margin-bottom: 20px; font-size: 13px;">Escribí los números o nombres de las mesas separados por comas.</p>
                     <div class="form-group">
                         <label>Mesas a generar (ej: 1, 2, 3, 4, 5, 12)</label>
                         <input type="text" id="qrTablesInput" value="1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12" class="form-control" style="max-width: 100%; margin-bottom: 16px;">
                     </div>
-                    
                     <button class="btn btn-blue" onclick="printMultipleQRs()" style="padding: 12px 24px;">🖨️ Imprimir Lote A4 de Mesas</button>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- CONTENEDOR OCULTO PARA IMPRESIÓN EN GRILLA -->
     <div id="printSheetContainer"></div>
 
-    <!-- CARRITO FLOTANTE -->
     <div id="cartBar" class="cart-bar">
         <div class="cart-info">
             <span class="cart-items-count" id="cartCountInfo">0 items</span>
@@ -298,7 +307,6 @@
         </button>
     </div>
 
-    <!-- MODAL CHECKOUT -->
     <div class="modal-overlay" id="checkoutModal">
         <div class="modal-content">
             <div class="modal-header">
@@ -337,7 +345,6 @@
         </div>
     </div>
 
-    <!-- MODAL CRUD ADMIN -->
     <div class="modal-overlay" id="crudModal">
         <div class="modal-content">
             <h2 id="modalCrudTitle" style="margin-bottom: 24px;">Editar Plato</h2>
@@ -353,29 +360,64 @@
         </div>
     </div>
 
-    <!-- TOAST & FAB -->
     <div class="toast" id="toast">Acción completada</div>
     <button class="fab-top" id="fabTop" onclick="scrollToTop()">
         <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 10l7-7m0 0l7 7m-7-7v18"></path></svg>
     </button>
 
     <script>
-        let db = [
-            { sku: "COMBO-1", category: "PROMOS DE PARRILLA Y COMBOS", name: "PARRILLADA SUPER COMPLETA", desc: "Variedad de cortes premium y guarnición.", price: 113400 },
-            { sku: "COMBO-2", category: "PROMOS DE PARRILLA Y COMBOS", name: "PARRILLADA P/2 COMPLETA", desc: "Mix de carnes para compartir.", price: 93400 },
-            { sku: "ENT-1", category: "ENTRADAS Y EMPANADAS", name: "DOCENA DE EMPANADAS", desc: "Carne / Pollo / JyQ.", price: 40000 },
-            { sku: "SAN-1", category: "SANGUCHES DE LA CASA!", name: "SANGUCHAZO DE VACIO", desc: "Pan francés crocante con chimichurri.", price: 26700 }
-        ];
-
+        let db = [];
         let localImageMap = {}; 
         let clientCategory = 'Todos';
         let cart = []; 
         let currentOrderType = 'mesa';
 
+        // --- CONEXIÓN FIREBASE ---
+        window.initAppFromFirebase = async function() {
+            try {
+                const querySnapshot = await window.fbGetDocs(window.fbCollection(window.fbDb, "productos"));
+                db = [];
+                querySnapshot.forEach((doc) => {
+                    db.push(doc.data());
+                });
+                
+                // Si la base está vacía, cargamos los datos por defecto
+                if(db.length === 0) {
+                    db = [
+                        { sku: "COMBO-1", category: "PROMOS DE PARRILLA Y COMBOS", name: "PARRILLADA SUPER COMPLETA", desc: "Variedad de cortes premium y guarnición.", price: 113400 },
+                        { sku: "COMBO-2", category: "PROMOS DE PARRILLA Y COMBOS", name: "PARRILLADA P/2 COMPLETA", desc: "Mix de carnes para compartir.", price: 93400 },
+                        { sku: "ENT-1", category: "ENTRADAS Y EMPANADAS", name: "DOCENA DE EMPANADAS", desc: "Carne / Pollo / JyQ.", price: 40000 },
+                        { sku: "SAN-1", category: "SANGUCHES DE LA CASA!", name: "SANGUCHAZO DE VACIO", desc: "Pan francés crocante con chimichurri.", price: 26700 }
+                    ];
+                    // Guardar iniciales en Firestore
+                    for(const p of db) {
+                        await window.fbSetDoc(window.fbDoc(window.fbDb, "productos", p.sku), p);
+                    }
+                }
+                updateAllViews();
+            } catch (e) {
+                console.error("Error cargando Firebase:", e);
+            }
+        };
+
+        async function saveProductToFirebase(product) {
+            try {
+                await window.fbSetDoc(window.fbDoc(window.fbDb, "productos", product.sku), product);
+            } catch (e) {
+                console.error("Error guardando en Firebase:", e);
+            }
+        }
+
+        async function deleteProductFromFirebase(sku) {
+            try {
+                await window.fbDeleteDoc(window.fbDoc(window.fbDb, "productos", sku));
+            } catch (e) {
+                console.error("Error borrando de Firebase:", e);
+            }
+        }
+
         document.addEventListener('DOMContentLoaded', () => {
-            updateAllViews();
-            
-            const publicUrl = (window.location.origin === "null" || window.location.origin.includes("file://")) ? "https://tu-app.web.app" : window.location.origin;
+            const publicUrl = (window.location.origin === "null" || window.location.origin.includes("file://")) ? "https://los-nonos-henna.vercel.app" : window.location.origin;
             document.getElementById('publicUrlDisplay').value = publicUrl;
             
             const urlParams = new URLSearchParams(window.location.search);
@@ -546,25 +588,49 @@
             document.getElementById('crudModal').classList.add('active');
         }
         function closeCrudModal() { document.getElementById('crudModal').classList.remove('active'); }
-        function saveProduct() {
+        
+        async function saveProduct() {
             const sku = document.getElementById('crudSku').value;
             const name = document.getElementById('crudName').value;
             const cat = document.getElementById('crudCat').value;
             const price = parseFloat(document.getElementById('crudPrice').value);
             const desc = document.getElementById('crudDesc').value;
             if(!name || !price) return;
+
+            let updatedProduct;
             if(editingSku) {
                 const index = db.findIndex(p => p.sku === editingSku);
                 db[index] = { ...db[index], name, category: cat, price, desc };
-            } else db.unshift({ sku, name, category: cat, price, desc });
-            closeCrudModal(); updateAllViews(); showToast('Guardado');
+                updatedProduct = db[index];
+            } else {
+                updatedProduct = { sku, name, category: cat, price, desc };
+                db.unshift(updatedProduct);
+            }
+            
+            await saveProductToFirebase(updatedProduct);
+            closeCrudModal(); 
+            updateAllViews(); 
+            showToast('Guardado en la nube');
         }
-        function deleteProduct(sku) { if(confirm(`¿Eliminar ${sku}?`)) { db = db.filter(p => p.sku !== sku); updateAllViews(); showToast('Eliminado'); } }
-        function bulkAdjustPrices() {
+
+        async function deleteProduct(sku) {
+            if(confirm(`¿Eliminar ${sku}?`)) {
+                db = db.filter(p => p.sku !== sku);
+                await deleteProductFromFirebase(sku);
+                updateAllViews(); 
+                showToast('Eliminado de la nube');
+            }
+        }
+
+        async function bulkAdjustPrices() {
             const p = parseFloat(prompt("Ingrese % de aumento (ej: 15):"));
             if(isNaN(p)) return;
-            db.forEach(item => item.price = Math.round(item.price * (1 + (p / 100))));
-            updateAllViews(); showToast(`Precios ajustados`);
+            for(let item of db) {
+                item.price = Math.round(item.price * (1 + (p / 100)));
+                await saveProductToFirebase(item);
+            }
+            updateAllViews(); 
+            showToast(`Precios ajustados en la nube`);
         }
 
         function downloadExcelTemplate() {
@@ -574,6 +640,7 @@
             XLSX.utils.book_append_sheet(wb, ws, "Catálogo");
             XLSX.writeFile(wb, "modelo_carga_masiva.xlsx");
         }
+
         function exportExcelBackup() {
             const exportData = db.map(p => ({ SKU: p.sku, Categoría: p.category, Plato: p.name, Descripción: p.desc, Precio: Number(p.price) }));
             const ws = XLSX.utils.json_to_sheet(exportData);
@@ -581,24 +648,31 @@
             XLSX.utils.book_append_sheet(wb, ws, "Catálogo");
             XLSX.writeFile(wb, "menu_los_nonos.xlsx");
         }
+
         function importExcel(event) {
             const file = event.target.files[0];
             if (!file) return;
             const reader = new FileReader();
-            reader.onload = function(e) {
+            reader.onload = async function(e) {
                 const data = new Uint8Array(e.target.result);
                 const workbook = XLSX.read(data, {type: 'array'});
                 const json = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]]);
                 if (json.length === 0) return;
-                json.forEach((row, i) => {
+                
+                for(let i=0; i<json.length; i++) {
+                    const row = json[i];
                     const sku = row.SKU || `SKU-${Date.now()}-${i}`;
                     const index = db.findIndex(p => p.sku === sku);
                     const newP = { sku, category: row.Categoría || 'Gral', name: row.Plato || 'Sin Nombre', desc: row.Descripción || '', price: parseFloat(String(row.Precio||'0').replace(/\D/g,'')) };
+                    
                     if (index > -1) db[index] = newP; else db.push(newP);
-                });
-                updateAllViews(); showToast(`Importados ${json.length} platos.`);
+                    await saveProductToFirebase(newP);
+                }
+                updateAllViews(); 
+                showToast(`Sincronizados ${json.length} platos en Firebase.`);
             };
-            reader.readAsArrayBuffer(file); event.target.value = '';
+            reader.readAsArrayBuffer(file); 
+            event.target.value = '';
         }
 
         function handleMassiveImages(event) {
@@ -611,28 +685,27 @@
                 reader.onload = (e) => { localImageMap[sku] = e.target.result; updateAllViews(); };
                 reader.readAsDataURL(file);
             });
-            event.target.value = ''; showToast('Imágenes vinculadas');
+            event.target.value = ''; 
+            showToast('Imágenes vinculadas');
         }
+
         function saveWpConfig() {
             const val = document.getElementById('wpConfig').value;
             if(val) { localStorage.setItem('losnonos_wp', val); showToast('Número guardado'); }
         }
+
         function copyMenuLink() {
             const url = document.getElementById('publicUrlDisplay').value;
             navigator.clipboard.writeText(`¡Hola! 👋 Mirá nuestro menú y hacé tu pedido acá:\n\n👉 ${url}`).then(() => showToast("Link copiado"));
         }
 
-        // --- IMPRESIÓN MASIVA CON INSTRUCCIÓN EXPLÍCITA ---
         function printMultipleQRs() {
             let baseUrl = document.getElementById('publicUrlDisplay').value;
             if(baseUrl.includes("Hosteá") || baseUrl.includes("tu-app")) baseUrl = window.location.href;
             baseUrl = baseUrl.split('?')[0];
 
             const inputVal = document.getElementById('qrTablesInput').value.trim();
-            if(!inputVal) {
-                alert("Por favor ingresa los números de las mesas.");
-                return;
-            }
+            if(!inputVal) { alert("Por favor ingresa los números de las mesas."); return; }
 
             const tables = inputVal.split(',').map(t => t.trim()).filter(t => t !== '');
             const container = document.getElementById('printSheetContainer');
