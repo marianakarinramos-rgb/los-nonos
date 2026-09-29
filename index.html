@@ -160,7 +160,6 @@
         .form-control { width: 100%; padding: 12px; border: 1px solid var(--border-light); border-radius: 8px; font-size: 15px; outline: none; }
         .form-control:focus { border-color: var(--primary); }
         
-        /* Modal CRUD (Admin) */
         #crudModal .modal-content { background: var(--surface-dark); border: 1px solid var(--border-dark); color: white; border-radius: 16px; align-self: center; max-height: 85vh; overflow-y: auto;}
         #crudModal .form-group label { color: var(--text-muted-dark); }
         #crudModal .form-control { background: #151B2B; border-color: var(--border-dark); color: white; }
@@ -171,10 +170,17 @@
         .fab-top { position: fixed; bottom: 32px; right: 32px; width: 56px; height: 56px; border-radius: 50%; background: var(--text-main-light); color: white; border: none; box-shadow: var(--shadow-lg); cursor: pointer; display: flex; align-items: center; justify-content: center; opacity: 0; pointer-events: none; transition: all 0.3s ease; transform: translateY(20px); z-index: 100; }
         .fab-top.visible { opacity: 1; pointer-events: auto; transform: translateY(0); }
 
+        /* --- ESTILOS DE IMPRESIÓN MASIVA EN GRILLA A4 --- */
+        #printSheetContainer { display: none; }
+
         @media print {
             body * { visibility: hidden; }
-            #printableQrArea, #printableQrArea * { visibility: visible; }
-            #printableQrArea { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); text-align: center; }
+            #printSheetContainer, #printSheetContainer * { visibility: visible; }
+            #printSheetContainer { display: grid !important; position: absolute; left: 0; top: 0; width: 100vw; grid-template-columns: repeat(3, 1fr); gap: 15px; padding: 20px; background: white; }
+            .print-card { border: 2px dashed #999; border-radius: 12px; padding: 15px; text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center; page-break-inside: avoid; background: #fff; }
+            .print-card img { width: 130px; height: 130px; object-fit: contain; margin: 8px 0; }
+            .print-title { font-size: 14px; font-weight: 900; color: #111; letter-spacing: 1px; }
+            .print-mesa { font-size: 16px; font-weight: 900; color: var(--primary); margin-top: 4px; }
         }
     </style>
 </head>
@@ -261,29 +267,29 @@
                     </div>
                 </div>
 
+                <!-- Impresión Masiva de QR para Salón -->
                 <div style="background: white; padding: 24px; border-radius: 16px; border: 1px solid var(--border-light);">
-                    <h3 style="margin-bottom: 12px; color: var(--text-main-light);">QR para Mesas</h3>
-                    <p style="color: var(--text-muted-light); margin-bottom: 24px; font-size: 13px;">Asigná el número de mesa para que el pedido llegue identificado.</p>
-                    <div style="display: flex; gap: 24px; align-items: flex-start; flex-wrap: wrap;">
-                        <div style="flex: 1; min-width: 200px;">
-                            <label style="display:block; font-size:13px; font-weight:600; color:var(--text-muted-light); margin-bottom:6px;">Mesa N°</label>
-                            <input type="number" id="qrTableInput" placeholder="Ej: 5" class="form-control" style="margin-bottom: 16px;">
-                            <div style="display: flex; gap: 10px;">
-                                <button class="btn btn-red" onclick="generateQR()" style="flex: 1;">Generar</button>
-                                <button class="btn btn-blue" onclick="printQR()" style="flex: 1;">🖨️ Imprimir QR</button>
-                            </div>
+                    <h3 style="margin-bottom: 12px; color: var(--text-main-light);">Impresión Masiva de QR (Aprovechar Hoja)</h3>
+                    <p style="color: var(--text-muted-light); margin-bottom: 24px; font-size: 13px;">Generá múltiples mesas en una sola hoja A4 listas para recortar e imprimir.</p>
+                    
+                    <div style="display: flex; gap: 16px; align-items: flex-end; flex-wrap: wrap;">
+                        <div style="flex: 1; min-width: 140px;">
+                            <label style="display:block; font-size:13px; font-weight:600; color:var(--text-muted-light); margin-bottom:6px;">Desde la Mesa N°</label>
+                            <input type="number" id="qrFrom" value="1" class="form-control">
                         </div>
-                        
-                        <div id="printableQrArea" style="width: 180px; height: 190px; border: 1px solid var(--border-light); padding: 12px; border-radius: 12px; text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #fff;">
-                            <div style="font-size: 13px; font-weight: 700; color: #333; margin-bottom: 4px;">LOS NONOS</div>
-                            <img id="qrImage" src="" alt="QR" style="width:120px; height:120px; opacity: 0.2; object-fit: contain;">
-                            <div id="qrTableLabel" style="font-size: 14px; font-weight: 800; margin-top: 6px; color: var(--primary); display: none;">MESA <span id="qrTableDisplay"></span></div>
+                        <div style="flex: 1; min-width: 140px;">
+                            <label style="display:block; font-size:13px; font-weight:600; color:var(--text-muted-light); margin-bottom:6px;">Hasta la Mesa N°</label>
+                            <input type="number" id="qrTo" value="12" class="form-control">
                         </div>
+                        <button class="btn btn-blue" onclick="printMultipleQRs()" style="height: 46px; padding: 0 24px;">🖨️ Imprimir Lote A4</button>
                     </div>
                 </div>
             </div>
         </div>
     </div>
+
+    <!-- CONTENEDOR OCULTO PARA IMPRESIÓN EN GRILLA -->
+    <div id="printSheetContainer"></div>
 
     <!-- CARRITO FLOTANTE -->
     <div id="cartBar" class="cart-bar">
@@ -335,7 +341,7 @@
         </div>
     </div>
 
-    <!-- MODAL CRUD ADMIN (CON DESCRIPCIÓN) -->
+    <!-- MODAL CRUD ADMIN -->
     <div class="modal-overlay" id="crudModal">
         <div class="modal-content">
             <h2 id="modalCrudTitle" style="margin-bottom: 24px;">Editar Plato</h2>
@@ -380,8 +386,6 @@
             const mesaFromUrl = urlParams.get('mesa');
             if(mesaFromUrl) {
                 document.getElementById('inputMesa').value = mesaFromUrl;
-                document.getElementById('qrTableInput').value = mesaFromUrl;
-                generateQR();
             }
 
             const savedWP = localStorage.getItem('losnonos_wp');
@@ -621,28 +625,37 @@
             const url = document.getElementById('publicUrlDisplay').value;
             navigator.clipboard.writeText(`¡Hola! 👋 Mirá nuestro menú y hacé tu pedido acá:\n\n👉 ${url}`).then(() => showToast("Link copiado"));
         }
-        function generateQR() {
+
+        // --- IMPRESIÓN MASIVA A4 ---
+        function printMultipleQRs() {
             let baseUrl = document.getElementById('publicUrlDisplay').value;
             if(baseUrl.includes("Hosteá") || baseUrl.includes("tu-app")) baseUrl = window.location.href;
-            
-            const tableNum = document.getElementById('qrTableInput').value;
-            let finalUrl = baseUrl;
-            
-            if(tableNum) {
-                finalUrl = baseUrl.includes('?') ? `${baseUrl}&mesa=${tableNum}` : `${baseUrl}?mesa=${tableNum}`;
-                document.getElementById('qrTableDisplay').textContent = tableNum;
-                document.getElementById('qrTableLabel').style.display = 'block';
-            } else {
-                document.getElementById('qrTableLabel').style.display = 'none';
+
+            const fromMesa = parseInt(document.getElementById('qrFrom').value) || 1;
+            const toMesa = parseInt(document.getElementById('qrTo').value) || 12;
+
+            if(fromMesa > toMesa) {
+                alert("La mesa inicial no puede ser mayor a la final.");
+                return;
             }
 
-            const img = document.getElementById('qrImage');
-            img.style.opacity = "1";
-            img.src = `https://api.qrserver.com/v1/create-qr-code/?size=400x400&data=${encodeURIComponent(finalUrl)}`;
-        }
+            const container = document.getElementById('printSheetContainer');
+            container.innerHTML = '';
 
-        function printQR() {
-            generateQR();
+            for(let i = fromMesa; i <= toMesa; i++) {
+                const finalUrl = baseUrl.includes('?') ? `${baseUrl}&mesa=${i}` : `${baseUrl}?mesa=${i}`;
+                const qrImgSrc = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(finalUrl)}`;
+
+                const card = document.createElement('div');
+                card.className = 'print-card';
+                card.innerHTML = `
+                    <div class="print-title">LOS NONOS</div>
+                    <img src="${qrImgSrc}" alt="QR Mesa ${i}">
+                    <div class="print-mesa">MESA ${i}</div>
+                `;
+                container.appendChild(card);
+            }
+
             window.print();
         }
 
