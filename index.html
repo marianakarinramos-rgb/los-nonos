@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Los Nonos | Sistema Híbrido</title>
+    <title>Los Nonos | Menú Digital</title>
     <!-- SheetJS para Excel -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <!-- Librería local para generar QR sin fallas -->
@@ -70,9 +70,7 @@
             width: 260px; background: var(--surface-light); border-right: 1px solid var(--border-light);
             padding: 24px; display: flex; flex-direction: column; gap: 16px; z-index: 20; flex-shrink: 0;
         }
-        @media (max-width: 768px) {
-            .sidebar { display: none; } /* Ocultamos sidebar compleja en celu para priorizar UX móvil limpia */
-        }
+        @media (max-width: 768px) { .sidebar { display: none; } }
         
         .brand { font-size: 24px; font-weight: 800; color: var(--primary); margin-bottom: 16px; }
         .nav-item {
@@ -124,7 +122,6 @@
         .client-header { margin-bottom: 20px; text-align: center; display: flex; justify-content: space-between; align-items: center; }
         .client-header h1 { font-size: 24px; font-weight: 800; color: var(--text-main-light); width: 100%; }
         
-        /* --- CORRECCIÓN DE CATEGORÍAS MÓVILES (Scroll horizontal fluido en una sola línea) --- */
         .categories-container { 
             display: flex; gap: 8px; margin-bottom: 24px; overflow-x: auto; padding-bottom: 8px; 
             white-space: nowrap; -webkit-overflow-scrolling: touch; scrollbar-width: none; 
@@ -148,7 +145,7 @@
         .client-price { font-size: 15px; color: var(--text-main-light); font-weight: 800; margin-bottom: 10px; }
         .add-btn { width: 100%; background: var(--primary); color: white; border: none; padding: 8px; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 13px; }
         
-        /* Barra de navegación inferior móvil para alternar rápido entre Catálogo y Admin */
+        /* Barra de navegación inferior móvil (solo visible para admin si no está en modo cliente estricto) */
         .mobile-nav {
             position: fixed; bottom: 0; left: 0; right: 0; background: var(--surface-light); border-top: 1px solid var(--border-light);
             display: flex; justify-content: space-around; padding: 10px 0; z-index: 60; box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
@@ -163,7 +160,7 @@
             box-shadow: 0 -4px 10px rgba(0,0,0,0.05); z-index: 50; transform: translateY(200%); transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
         .cart-bar.visible { transform: translateY(0); }
-        @media (min-width: 768px) { .cart-bar { bottom: 0; left: 260px; } }
+        @media (min-width: 768px) { .cart-bar { bottom: 0; left: 0; } }
         .cart-info { display: flex; flex-direction: column; }
         .cart-total { font-size: 17px; font-weight: 800; color: var(--text-main-light); }
         .cart-items-count { font-size: 12px; color: var(--text-muted-light); font-weight: 500; }
@@ -226,7 +223,7 @@
 </head>
 <body>
 
-    <!-- Sidebar de Escritorio -->
+    <!-- Sidebar de Escritorio (Solo Administrador) -->
     <div class="sidebar" id="sidebar">
         <div class="brand">Los Nonos.</div>
         <nav style="display: flex; flex-direction: column; gap: 8px;">
@@ -245,8 +242,8 @@
         </nav>
     </div>
 
-    <!-- Barra de navegación inferior para Celular -->
-    <div class="mobile-nav">
+    <!-- Barra inferior móvil para Administrador (Oculta para clientes puros) -->
+    <div class="mobile-nav" id="mobileNav">
         <div class="mob-nav-item active" id="mob-btn-client" onclick="switchTab('client', event)">
             <svg width="22" height="22" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>
             Menú
@@ -261,7 +258,7 @@
         </div>
     </div>
 
-    <div class="main-content" id="mainScroll">
+    <div class="main-content" id="mainScroll" style="margin-left: 0;">
         
         <!-- VISTA CLIENTE -->
         <div id="view-client" class="view-container">
@@ -285,7 +282,7 @@
                     <button class="btn btn-red" onclick="openCrudModal()">+ Plato</button>
                     <button class="btn btn-outline" onclick="downloadExcelTemplate()">📥 Modelo Excel</button>
                     <input type="file" id="excelFileInput" accept=".xlsx" class="hidden" onchange="importExcel(event)">
-                    <button class="btn btn-outline" onclick="document.getElementById('excelFileInput').click()">⬆️️ Subir Excel</button>
+                    <button class="btn btn-outline" onclick="document.getElementById('excelFileInput').click()">⬆ Subir Excel</button>
                     <button class="btn btn-blue" onclick="exportExcelBackup()">⬇️ Backup</button>
                     <button class="btn btn-yellow" onclick="bulkAdjustPrices()">% Ajustar</button>
                 </div>
@@ -313,10 +310,10 @@
                         </div>
                     </div>
                     <div style="flex: 1; min-width: 250px;">
-                        <h3 style="margin-bottom: 12px; color: var(--text-main-light);">Link del Catálogo</h3>
-                        <p style="color: var(--text-muted-light); margin-bottom: 16px; font-size: 13px;">URL para compartir en redes.</p>
+                        <h3 style="margin-bottom: 12px; color: var(--text-main-light);">Link Limpio para Clientes</h3>
+                        <p style="color: var(--text-muted-light); margin-bottom: 16px; font-size: 13px;">Enlace sin paneles de administración para enviar por WhatsApp.</p>
                         <input type="text" id="publicUrlDisplay" readonly class="form-control" style="margin-bottom: 12px; background: #F9FAFB; color: #6B7280;">
-                        <button class="btn btn-outline-light" onclick="copyMenuLink()" style="width: 100%;">Copiar Link</button>
+                        <button class="btn btn-green" onclick="copyCleanMenuLink()" style="width: 100%;">Copiar Link para Clientes</button>
                     </div>
                 </div>
 
@@ -460,9 +457,21 @@
             
             const urlParams = new URLSearchParams(window.location.search);
             const mesaFromUrl = urlParams.get('mesa');
+            const adminMode = urlParams.get('admin');
+
             if(mesaFromUrl) {
                 document.getElementById('inputMesa').value = mesaFromUrl;
                 document.getElementById('mesaBadge').textContent = `(Mesa ${mesaFromUrl})`;
+            }
+
+            // DETECTOR INTELIGENTE: Si entra un cliente o escanea QR, ocultamos paneles de admin
+            if(!adminMode && (mesaFromUrl || window.innerWidth <= 768)) {
+                // Ocultar barras de admin para que el cliente vea solo el menú limpio
+                const sidebar = document.getElementById('sidebar');
+                const mobileNav = document.getElementById('mobileNav');
+                if(sidebar) sidebar.style.display = 'none';
+                if(mobileNav) mobileNav.style.display = 'none';
+                document.getElementById('mainScroll').style.marginLeft = '0';
             }
 
             const savedWP = localStorage.getItem('losnonos_wp');
@@ -603,7 +612,7 @@
             else details = `🛍️ *Retiro por el local (Takeaway)*`;
 
             const totalPrice = cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
-            let text = `¡Hola! Soy ${name}. Quiero hacer un pedido:\n\n${details}\n-----------------------\n`;
+            let text = `¡Hola! 👋 Soy ${name}. Quiero hacer un pedido:\n\n${details}\n-----------------------\n`;
             cart.forEach(item => { text += `${item.qty}x ${item.name} - ${formatPrice(item.price * item.qty)}\n`; });
             text += `-----------------------\n*Total: ${formatPrice(totalPrice)}*\n`;
 
@@ -758,9 +767,10 @@
             if(val) { localStorage.setItem('losnonos_wp', val); showToast('Número guardado'); }
         }
 
-        function copyMenuLink() {
+        function copyCleanMenuLink() {
             const url = document.getElementById('publicUrlDisplay').value;
-            navigator.clipboard.writeText(`¡Hola! 👋 Mirá nuestro menú y hacé tu pedido acá:\n\n👉 ${url}`).then(() => showToast("Link copiado"));
+            const cleanText = `¡Hola! 👋 Mirá nuestro menú y hacé tu pedido acá:\n\n👉 ${url}`;
+            navigator.clipboard.writeText(cleanText).then(() => showToast("Link limpio para clientes copiado"));
         }
 
         function printMultipleQRs() {
