@@ -177,10 +177,11 @@
             body * { visibility: hidden; }
             #printSheetContainer, #printSheetContainer * { visibility: visible; }
             #printSheetContainer { display: grid !important; position: absolute; left: 0; top: 0; width: 100vw; grid-template-columns: repeat(3, 1fr); gap: 15px; padding: 20px; background: white; }
-            .print-card { border: 2px dashed #999; border-radius: 12px; padding: 15px; text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center; page-break-inside: avoid; background: #fff; }
-            .print-card img { width: 130px; height: 130px; object-fit: contain; margin: 8px 0; }
-            .print-title { font-size: 14px; font-weight: 900; color: #111; letter-spacing: 1px; }
-            .print-mesa { font-size: 16px; font-weight: 900; color: var(--primary); margin-top: 4px; }
+            .print-card { border: 2px dashed #999; border-radius: 12px; padding: 12px; text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center; page-break-inside: avoid; background: #fff; }
+            .print-card img { width: 120px; height: 120px; object-fit: contain; margin: 4px 0; }
+            .print-title { font-size: 13px; font-weight: 900; color: #111; letter-spacing: 1px; }
+            .print-mesa { font-size: 15px; font-weight: 900; color: var(--primary); margin-top: 2px; }
+            .print-instructions { font-size: 11px; font-weight: 700; color: #555; margin-top: 4px; background: #eee; padding: 3px 8px; border-radius: 4px; width: 100%; }
         }
     </style>
 </head>
@@ -267,13 +268,13 @@
                     </div>
                 </div>
 
-                <!-- Impresión Personalizada por Lista de Mesas -->
+                <!-- Impresión Masiva con instrucciones claras -->
                 <div style="background: white; padding: 24px; border-radius: 16px; border: 1px solid var(--border-light);">
                     <h3 style="margin-bottom: 12px; color: var(--text-main-light);">Generador y Lote de Mesas</h3>
-                    <p style="color: var(--text-muted-light); margin-bottom: 20px; font-size: 13px;">Escribí los números o nombres de las mesas separados por comas. Se generará un QR único para cada una en una hoja lista para imprimir.</p>
+                    <p style="color: var(--text-muted-light); margin-bottom: 20px; font-size: 13px;">Escribí los números o nombres de las mesas separados por comas. Cada tarjeta incluirá la instrucción para el comensal.</p>
                     
                     <div class="form-group">
-                        <label>Mesas a generar (ej: 1, 2, 3, 4, 5, 12 o VIP 1, Barra)</label>
+                        <label>Mesas a generar (ej: 1, 2, 3, 4, 5, 12)</label>
                         <input type="text" id="qrTablesInput" value="1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12" class="form-control" style="max-width: 100%; margin-bottom: 16px;">
                     </div>
                     
@@ -621,7 +622,7 @@
             navigator.clipboard.writeText(`¡Hola! 👋 Mirá nuestro menú y hacé tu pedido acá:\n\n👉 ${url}`).then(() => showToast("Link copiado"));
         }
 
-        // --- IMPRESIÓN MASIVA POR LISTA LIBRE DE MESAS ---
+        // --- IMPRESIÓN MASIVA CON INSTRUCCIÓN EXPLÍCITA ---
         function printMultipleQRs() {
             let baseUrl = document.getElementById('publicUrlDisplay').value;
             if(baseUrl.includes("Hosteá") || baseUrl.includes("tu-app")) baseUrl = window.location.href;
@@ -633,9 +634,7 @@
                 return;
             }
 
-            // Separa por comas (ej: "1, 2, 5, 12" -> ["1", "2", "5", "12"])
             const tables = inputVal.split(',').map(t => t.trim()).filter(t => t !== '');
-
             const container = document.getElementById('printSheetContainer');
             container.innerHTML = '';
 
@@ -649,6 +648,7 @@
                     <div class="print-title">LOS NONOS</div>
                     <img src="${qrImgSrc}" alt="QR Mesa ${table}">
                     <div class="print-mesa">MESA ${table}</div>
+                    <div class="print-instructions">ESCANEÁ PARA VER EL MENÚ</div>
                 `;
                 container.appendChild(card);
             });
