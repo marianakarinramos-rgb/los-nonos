@@ -241,6 +241,8 @@
                     <p class="sub">Control total sincronizado con Firebase Firestore.</p>
                 </div>
                 <div class="admin-toolbar">
+                    <input type="file" id="massImageInput" multiple accept="image/*" class="hidden" onchange="handleMassiveImages(event)">
+                    <button class="btn btn-outline" onclick="document.getElementById('massImageInput').click()">📷 Fotos Masivas</button>
                     <button class="btn btn-red" onclick="openCrudModal()">+ Plato</button>
                     <button class="btn btn-outline" onclick="downloadExcelTemplate()">📥 Modelo Excel</button>
                     <input type="file" id="excelFileInput" accept=".xlsx" class="hidden" onchange="importExcel(event)">
@@ -676,6 +678,29 @@
             };
             reader.readAsArrayBuffer(file); 
             event.target.value = '';
+        }
+
+        // --- CARGA MASIVA DE FOTOS LOCALES A FIREBASE (O ASIGNACIÓN) ---
+        function handleMassiveImages(event) {
+            const files = event.target.files;
+            if(!files || files.length === 0) return;
+            Array.from(files).forEach(file => {
+                if(!file.type.startsWith('image/')) return;
+                const sku = file.name.split('.').slice(0, -1).join('.');
+                const reader = new FileReader();
+                reader.onload = async (e) => {
+                    const base64Img = e.target.result;
+                    const product = db.find(p => p.sku.toLowerCase() === sku.toLowerCase());
+                    if(product) {
+                        product.img = base64Img;
+                        await saveProductToFirebase(product);
+                        updateAllViews();
+                    }
+                };
+                reader.readAsDataURL(file);
+            });
+            event.target.value = ''; 
+            showToast('Imágenes masivas vinculadas y guardadas en la nube');
         }
 
         function saveWpConfig() {
