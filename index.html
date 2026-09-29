@@ -6,6 +6,8 @@
     <title>Los Nonos | Sistema Híbrido</title>
     <!-- SheetJS para Excel -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <!-- Librería nativa para generar QR sin depender de APIs externas -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     
     <!-- Firebase SDKs -->
     <script type="module">
@@ -190,6 +192,7 @@
         .fab-top { position: fixed; bottom: 32px; right: 32px; width: 56px; height: 56px; border-radius: 50%; background: var(--text-main-light); color: white; border: none; box-shadow: var(--shadow-lg); cursor: pointer; display: flex; align-items: center; justify-content: center; opacity: 0; pointer-events: none; transition: all 0.3s ease; transform: translateY(20px); z-index: 100; }
         .fab-top.visible { opacity: 1; pointer-events: auto; transform: translateY(0); }
 
+        /* --- ESTILOS DE IMPRESIÓN MASIVA EN GRILLA A4 --- */
         #printSheetContainer { display: none; }
 
         @media print {
@@ -197,7 +200,8 @@
             #printSheetContainer, #printSheetContainer * { visibility: visible; }
             #printSheetContainer { display: grid !important; position: absolute; left: 0; top: 0; width: 100vw; grid-template-columns: repeat(3, 1fr); gap: 15px; padding: 20px; background: white; }
             .print-card { border: 2px dashed #999; border-radius: 12px; padding: 12px; text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center; page-break-inside: avoid; background: #fff; }
-            .print-card img { width: 120px; height: 120px; object-fit: contain; margin: 4px 0; }
+            .print-card .qr-box { width: 120px; height: 120px; margin: 4px 0; display: flex; align-items: center; justify-content: center; }
+            .print-card .qr-box canvas, .print-card .qr-box img { width: 100% !important; height: 100% !important; }
             .print-title { font-size: 13px; font-weight: 900; color: #111; letter-spacing: 1px; }
             .print-mesa { font-size: 15px; font-weight: 900; color: var(--primary); margin-top: 2px; }
             .print-instructions { font-size: 11px; font-weight: 700; color: #555; margin-top: 4px; background: #eee; padding: 3px 8px; border-radius: 4px; width: 100%; }
@@ -246,7 +250,7 @@
                     <button class="btn btn-red" onclick="openCrudModal()">+ Plato</button>
                     <button class="btn btn-outline" onclick="downloadExcelTemplate()">📥 Modelo Excel</button>
                     <input type="file" id="excelFileInput" accept=".xlsx" class="hidden" onchange="importExcel(event)">
-                    <button class="btn btn-outline" onclick="document.getElementById('excelFileInput').click()">⬆️ Subir Excel</button>
+                    <button class="btn btn-outline" onclick="document.getElementById('excelFileInput').click()">⬆️️ Subir Excel</button>
                     <button class="btn btn-blue" onclick="exportExcelBackup()">⬇️ Bajar Backup</button>
                     <button class="btn btn-yellow" onclick="bulkAdjustPrices()">% Ajustar %</button>
                 </div>
@@ -666,7 +670,7 @@
                         category: row.Categoría || 'Gral', 
                         name: row.Plato || 'Sin Nombre', 
                         desc: row.Descripción || '', 
-                        price: parseFloat(String(row.Precio||'0').replace(/\D/g,'')),
+                        price: parseFloat(String(row.Precio||'0').replace(/\D/g, '')),
                         img: row.Imagen || ''
                     };
                     
@@ -680,7 +684,6 @@
             event.target.value = '';
         }
 
-        // --- CARGA MASIVA DE FOTOS LOCALES A FIREBASE (O ASIGNACIÓN) ---
         function handleMassiveImages(event) {
             const files = event.target.files;
             if(!files || files.length === 0) return;
@@ -713,6 +716,7 @@
             navigator.clipboard.writeText(`¡Hola! 👋 Mirá nuestro menú y hacé tu pedido acá:\n\n👉 ${url}`).then(() => showToast("Link copiado"));
         }
 
+        // --- IMPRESIÓN MASIVA CON QR LOCAL INTEGRADO ---
         function printMultipleQRs() {
             let baseUrl = document.getElementById('publicUrlDisplay').value;
             if(baseUrl.includes("Hosteá") || baseUrl.includes("tu-app")) baseUrl = window.location.href;
@@ -727,20 +731,32 @@
 
             tables.forEach(table => {
                 const finalUrl = `${baseUrl}?mesa=${encodeURIComponent(table)}`;
-                const qrImgSrc = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(finalUrl)}`;
 
                 const card = document.createElement('div');
                 card.className = 'print-card';
                 card.innerHTML = `
                     <div class="print-title">LOS NONOS</div>
-                    <img src="${qrImgSrc}" alt="QR Mesa ${table}" loading="lazy">
+                    <div class="qr-box" id="qr-target-${table}"></div>
                     <div class="print-mesa">MESA ${table}</div>
                     <div class="print-instructions">ESCANEÁ PARA VER EL MENÚ</div>
                 `;
                 container.appendChild(card);
+
+                // Generar QR localmente usando qrcode.js
+                new QRCode(document.getElementById(`qr-target-${table}`), {
+                    text: finalUrl,
+                    width: 120,
+                    height: 120,
+                    colorDark : "#000000",
+                    colorLight : "#ffffff",
+                    correctLevel : QRCode.CorrectLevel.M
+                });
             });
 
-            window.print();
+            // Dar un pequeñísimo respiro al navegador para renderizar los canvas antes de abrir la impresión
+            setTimeout(() => {
+                window.print();
+            }, 300);
         }
 
         function showToast(msg) {
@@ -758,7 +774,7 @@
                 }
             });
         }
-        function scrollToTop() { document.getElementById('mainScroll').scrollTo({ top: 0, behavior: 'smooth' }); }
+        function scrollToTop() { document.getElementById('mainScroll')->scrollTo({ top: 0, behavior: 'smooth' }); }
     </script>
 </body>
 </html>
