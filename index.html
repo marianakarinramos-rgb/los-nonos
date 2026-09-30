@@ -3,7 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <!-- Meta tags para Look & Feel Nativo (PWA Básico) -->
+    <meta name="theme-color" content="#F4F6F8">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <title>Los Nonos | Menú Digital</title>
+    
     <!-- SheetJS para Excel -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <!-- Librería local para generar QR sin fallas -->
@@ -338,7 +343,7 @@
         </button>
     </div>
 
-    <!-- NUEVO: Modal de Detalles del Producto (Quick View) -->
+    <!-- Modal de Detalles del Producto (Quick View) -->
     <div class="modal-overlay" id="productModal">
         <div class="modal-content" style="padding: 0; overflow: hidden;">
             <div style="position: relative;">
@@ -465,11 +470,17 @@
                 
                 if(db.length === 0) {
                     db = [
-                        { sku: "COMBO-1", category: "PROMOS Y COMBOS", name: "PARRILLADA SUPER COMPLETA", desc: "Variedad de cortes premium y guarnición.", price: 113400, img: "" },
-                        { sku: "COMBO-2", category: "PROMOS Y COMBOS", name: "PARRILLADA P/2 COMPLETA", desc: "Mix de carnes para compartir.", price: 93400, img: "" }
+                        { sku: "COMBO-1", category: "PROMOS Y COMBOS", name: "PARRILLADA SUPER COMPLETA", desc: "Variedad de cortes premium y guarnición.", price: 113400, img: "" }
                     ];
                     for(const p of db) { await window.fbSetDoc(window.fbDoc(window.fbDb, "productos", p.sku), p); }
                 }
+
+                // Recuperar carrito guardado en localStorage para que no se pierda al recargar
+                const savedCart = localStorage.getItem('losnonos_cart');
+                if(savedCart) {
+                    cart = JSON.parse(savedCart);
+                }
+
                 updateAllViews();
             } catch (e) {
                 console.error("Error cargando Firebase:", e);
@@ -533,7 +544,7 @@
             else if (cart.length > 0) document.getElementById('cartBar').classList.add('visible');
         }
 
-        function updateAllViews() { renderAdminGrid(); renderClientCategories(); renderClientGrid(); }
+        function updateAllViews() { renderAdminGrid(); renderClientCategories(); renderClientGrid(); updateCartUI(); }
 
         function renderAdminGrid() {
             document.getElementById('adminGrid').innerHTML = db.map(p => `
@@ -562,7 +573,6 @@
             const grid = document.getElementById('clientGrid');
             const filteredDb = clientCategory === 'Todos' ? db : db.filter(p => p.category === clientCategory);
             
-            // NUEVO: La tarjeta entera ahora abre el modal, y el botón +Agregar tiene event.stopPropagation() para no abrir el modal al tocarlo.
             grid.innerHTML = filteredDb.map(p => `
                 <div class="client-card" onclick="openProductModal('${p.sku}')">
                     <img src="${getImageUrl(p)}" class="client-img" loading="lazy">
@@ -576,7 +586,6 @@
             `).join('');
         }
 
-        // NUEVO: Lógica del Modal de Producto (Quick View)
         function openProductModal(sku) {
             const p = db.find(item => item.sku === sku);
             if(!p) return;
@@ -586,7 +595,6 @@
             document.getElementById('pmPrice').textContent = formatPrice(p.price);
             document.getElementById('pmDesc').textContent = p.desc || 'Sin descripción adicional.';
             
-            // Configurar el botón de agregar
             const addBtn = document.getElementById('pmAddBtn');
             addBtn.onclick = () => {
                 addToCart(sku);
@@ -597,13 +605,18 @@
         }
         function closeProductModal() { document.getElementById('productModal').classList.remove('active'); }
 
+        function saveCartToLocal() {
+            localStorage.setItem('losnonos_cart', JSON.stringify(cart));
+        }
 
         function addToCart(sku) {
             const product = db.find(p => p.sku === sku);
             const existing = cart.find(item => item.sku === sku);
             if (existing) existing.qty += 1;
             else cart.push({ sku: product.sku, name: product.name, price: product.price, qty: 1 });
-            updateCartUI(); showToast('Agregado al pedido');
+            saveCartToLocal();
+            updateCartUI(); 
+            showToast('Agregado al pedido');
         }
 
         function updateCartQty(sku, change) {
@@ -611,7 +624,9 @@
             if (index === -1) return;
             cart[index].qty += change;
             if (cart[index].qty <= 0) cart.splice(index, 1);
-            updateCartUI(); renderCheckoutItems();
+            saveCartToLocal();
+            updateCartUI(); 
+            renderCheckoutItems();
         }
 
         function updateCartUI() {
@@ -666,12 +681,18 @@
             
             if (currentOrderType === 'mesa') details = `📍 *En el Local* - Mesa: ${document.getElementById('inputMesa').value || 'S/N'}`;
             else if (currentOrderType === 'delivery') details = `🛵 *Delivery* - Dirección: ${document.getElementById('inputAddress').value || 'No especificada'}`;
-            else details = `🛍️ *Retiro por el local (Takeaway)*`;
+            else details = `🛍️️ *Retiro por el local (Takeaway)*`;
 
             const totalPrice = cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
             let text = `¡Hola! 👋 Soy ${name}. Quiero hacer un pedido:\n\n${details}\n-----------------------\n`;
             cart.forEach(item => { text += `${item.qty}x ${item.name} - ${formatPrice(item.price * item.qty)}\n`; });
             text += `-----------------------\n*Total: ${formatPrice(totalPrice)}*\n`;
+
+            // Limpiar carrito tras enviar
+            localStorage.removeItem('losnonos_cart');
+            cart = [];
+            updateCartUI();
+            closeCheckoutModal();
 
             window.open(`https://wa.me/${wpNumber}?text=${encodeURIComponent(text)}`, '_blank');
         }
