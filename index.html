@@ -3,7 +3,6 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <!-- Meta tags para Look & Feel Nativo (PWA Básico) -->
     <meta name="theme-color" content="#F4F6F8">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -11,7 +10,7 @@
     
     <!-- SheetJS para Excel -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    <!-- Librería local para generar QR sin fallas -->
+    <!-- Librería local para generar QR -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     
     <!-- Firebase SDKs -->
@@ -151,7 +150,6 @@
         .client-price { font-size: 15px; color: var(--text-main-light); font-weight: 800; margin-bottom: 10px; }
         .add-btn { width: 100%; background: var(--primary); color: white; border: none; padding: 8px; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 13px; pointer-events: auto; }
         
-        /* Barra móvil para administradores */
         .mobile-nav {
             position: fixed; bottom: 0; left: 0; right: 0; background: var(--surface-light); border-top: 1px solid var(--border-light);
             display: flex; justify-content: space-around; padding: 10px 0; z-index: 60; box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
@@ -434,6 +432,7 @@
         let clientCategory = 'Todos';
         let cart = []; 
         let currentOrderType = 'mesa';
+        let globalWpNumber = "5491100000000"; // Número por defecto
 
         function resizeAndCompressImage(file, maxWidth = 600, maxHeight = 600, quality = 0.6) {
             return new Promise((resolve) => {
@@ -462,6 +461,7 @@
 
         window.initAppFromFirebase = async function() {
             try {
+                // 1. Cargar Platos
                 const querySnapshot = await window.fbGetDocs(window.fbCollection(window.fbDb, "productos"));
                 db = [];
                 querySnapshot.forEach((doc) => {
@@ -470,12 +470,25 @@
                 
                 if(db.length === 0) {
                     db = [
-                        { sku: "COMBO-1", category: "PROMOS Y COMBOS", name: "PARRILLADA SUPER COMPLETA", desc: "Variedad de cortes premium y guarnición.", price: 113400, img: "" }
+                        { sku: "COMBO-1", category: "PROMOS Y COMBOS", name: "PARRILLADA SUPER COMPLETA", desc: "Variedad de cortes premium y guarnición.", price: 113400, img: "" },
+                        { sku: "COMBO-2", category: "PROMOS Y COMBOS", name: "PARRILLADA P/2 COMPLETA", desc: "Mix de carnes para compartir.", price: 93400, img: "" }
                     ];
                     for(const p of db) { await window.fbSetDoc(window.fbDoc(window.fbDb, "productos", p.sku), p); }
                 }
 
-                // Recuperar carrito guardado en localStorage para que no se pierda al recargar
+                // 2. NUEVO: Cargar Configuración de WhatsApp desde la nube
+                try {
+                    const configSnap = await window.fbGetDocs(window.fbCollection(window.fbDb, "config"));
+                    configSnap.forEach(doc => {
+                        if(doc.id === 'general' && doc.data().whatsapp) {
+                            globalWpNumber = doc.data().whatsapp;
+                            const wpInput = document.getElementById('wpConfig');
+                            if(wpInput) wpInput.value = globalWpNumber;
+                        }
+                    });
+                } catch(e) { console.log("Configuración de WP no encontrada aún."); }
+
+                // 3. Recuperar carrito guardado
                 const savedCart = localStorage.getItem('losnonos_cart');
                 if(savedCart) {
                     cart = JSON.parse(savedCart);
@@ -522,8 +535,6 @@
                 document.getElementById('mainScroll').style.marginLeft = '0';
             }
 
-            const savedWP = localStorage.getItem('losnonos_wp');
-            if (savedWP) document.getElementById('wpConfig').value = savedWP;
             setupScrollListener();
         });
 
@@ -674,21 +685,20 @@
         }
 
         function sendOrder() {
-            let wpNumber = localStorage.getItem('losnonos_wp') || "5491100000000";
-            wpNumber = wpNumber.replace(/\D/g, ''); 
+            // Usa el número global descargado de Firebase
+            let wpNumber = globalWpNumber.replace(/\D/g, ''); 
             const name = document.getElementById('inputName').value.trim() || 'Cliente';
             let details = '';
             
             if (currentOrderType === 'mesa') details = `📍 *En el Local* - Mesa: ${document.getElementById('inputMesa').value || 'S/N'}`;
             else if (currentOrderType === 'delivery') details = `🛵 *Delivery* - Dirección: ${document.getElementById('inputAddress').value || 'No especificada'}`;
-            else details = `🛍️️ *Retiro por el local (Takeaway)*`;
+            else details = `🛍 *Retiro por el local (Takeaway)*`;
 
             const totalPrice = cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
             let text = `¡Hola! 👋 Soy ${name}. Quiero hacer un pedido:\n\n${details}\n-----------------------\n`;
             cart.forEach(item => { text += `${item.qty}x ${item.name} - ${formatPrice(item.price * item.qty)}\n`; });
             text += `-----------------------\n*Total: ${formatPrice(totalPrice)}*\n`;
 
-            // Limpiar carrito tras enviar
             localStorage.removeItem('losnonos_cart');
             cart = [];
             updateCartUI();
@@ -848,9 +858,18 @@
             event.target.value = ''; 
         }
 
-        function saveWpConfig() {
+        // NUEVO: Guardado del número de WhatsApp en Firebase
+        async function saveWpConfig() {
             const val = document.getElementById('wpConfig').value;
-            if(val) { localStorage.setItem('losnonos_wp', val); showToast('Número guardado'); }
+            if(val) { 
+                globalWpNumber = val;
+                try {
+                    await window.fbSetDoc(window.fbDoc(window.fbDb, "config", "general"), { whatsapp: val });
+                    showToast('Número guardado en la nube'); 
+                } catch(e) {
+                    showToast('Error al guardar en la nube');
+                }
+            }
         }
 
         function copyCleanMenuLink() {
