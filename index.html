@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <!-- Meta tags para Look & Feel Nativo (PWA Básico) -->
     <meta name="theme-color" content="#F4F6F8">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -10,7 +11,7 @@
     
     <!-- SheetJS para Excel -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    <!-- Librería local para generar QR -->
+    <!-- Librería local para generar QR sin fallas -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     
     <!-- Firebase SDKs -->
@@ -30,6 +31,7 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
+        // Exponemos las funciones a nivel global para que el script de abajo las pueda usar
         window.fbDb = db;
         window.fbCollection = collection;
         window.fbGetDocs = getDocs;
@@ -432,7 +434,7 @@
         let clientCategory = 'Todos';
         let cart = []; 
         let currentOrderType = 'mesa';
-        let globalWpNumber = "5491100000000"; // Número por defecto
+        let globalWpNumber = "5491100000000";
 
         function resizeAndCompressImage(file, maxWidth = 600, maxHeight = 600, quality = 0.6) {
             return new Promise((resolve) => {
@@ -461,7 +463,6 @@
 
         window.initAppFromFirebase = async function() {
             try {
-                // 1. Cargar Platos
                 const querySnapshot = await window.fbGetDocs(window.fbCollection(window.fbDb, "productos"));
                 db = [];
                 querySnapshot.forEach((doc) => {
@@ -476,7 +477,6 @@
                     for(const p of db) { await window.fbSetDoc(window.fbDoc(window.fbDb, "productos", p.sku), p); }
                 }
 
-                // 2. NUEVO: Cargar Configuración de WhatsApp desde la nube
                 try {
                     const configSnap = await window.fbGetDocs(window.fbCollection(window.fbDb, "config"));
                     configSnap.forEach(doc => {
@@ -488,7 +488,6 @@
                     });
                 } catch(e) { console.log("Configuración de WP no encontrada aún."); }
 
-                // 3. Recuperar carrito guardado
                 const savedCart = localStorage.getItem('losnonos_cart');
                 if(savedCart) {
                     cart = JSON.parse(savedCart);
@@ -527,7 +526,9 @@
                 document.getElementById('mesaBadge').textContent = `(Mesa ${mesaFromUrl})`;
             }
 
-            if(!adminMode && (mesaFromUrl || window.innerWidth <= 768)) {
+            // BLINDAJE ADMINISTRADOR: Si no está explícitamente el parámetro ?admin=true,
+            // oculta los controles de administración para TODAS las pantallas (móvil y PC).
+            if(!adminMode) {
                 const sidebar = document.getElementById('sidebar');
                 const mobileNav = document.getElementById('mobileNav');
                 if(sidebar) sidebar.style.display = 'none';
@@ -685,7 +686,6 @@
         }
 
         function sendOrder() {
-            // Usa el número global descargado de Firebase
             let wpNumber = globalWpNumber.replace(/\D/g, ''); 
             const name = document.getElementById('inputName').value.trim() || 'Cliente';
             let details = '';
@@ -858,7 +858,6 @@
             event.target.value = ''; 
         }
 
-        // NUEVO: Guardado del número de WhatsApp en Firebase
         async function saveWpConfig() {
             const val = document.getElementById('wpConfig').value;
             if(val) { 
